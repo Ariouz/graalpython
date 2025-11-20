@@ -77,6 +77,12 @@ jobs:
         run: |
           "PARENT_DIRECTORY=$PWD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      # PATH seems to be empty on Linux runner
+      - name: Fill Linux PATH
+        if: runner.os == 'ubuntu-latest'
+        run: |
+          echo "PATH=/bin:/usr/bin" >> $GITHUB_ENV
+
       # Set up Python and packages
       - uses: actions/setup-python@v6
         if: ${{ matrix.python_version }}
