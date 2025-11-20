@@ -79,7 +79,7 @@ jobs:
 
       # PATH seems to be empty on Linux runner
       - name: Fill Linux PATH
-        if: runner.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           echo "PATH=/bin:/usr/bin" >> $GITHUB_ENV
 
