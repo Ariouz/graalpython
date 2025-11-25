@@ -446,6 +446,13 @@ class TestRunner:
         self.display_summary()
 
     def generate_mx_report(self, path: str):
+        # Some reports, such as retagger, are split in batches when ran on github ci
+        # This allows to upload them as artifacts
+        report_suffix = os.environ.get("MX_REPORT_SUFFIX")
+        if report_suffix:
+            tmppath,ext = os.path.splitext(path)
+            path = f"{tmppath}_{report_suffix}{ext}"
+
         report_data = []
         for result in self.results:
             # Skip synthetic results for failed class setups and such
