@@ -565,7 +565,8 @@
             publishArtifacts: [
                 {
                     name: "reports-merged.json",
-                    dir: ".",
+                    dir: "main/retagger-reports",
+                    patterns: "reports-merged.json"
                 }
             ],
             run: [
@@ -575,6 +576,16 @@
                 [
                     "pwd",
                 ],
+                ["mkdir", "-p", "retagger-reports"],
+                ["sh", "-c", "mv retagger-report*.json retagger-reports"],
+                ["cd", "retagger-reports"],
+                ["python3 ../.github/scripts/merge_retagger_results.py"],
+                ["ls"],
+                ["cd", ".."],
+                ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "linux-x86_64", "../retagger-reports/reports-merged.json"],
+                ["git", "diff", ">>", "diff_reports"],
+                ["cat", "diff_reports"],
+                // run mx merge tags + git diff + export git diff
             ]
         },
     ],

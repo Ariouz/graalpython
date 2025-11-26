@@ -451,7 +451,7 @@ class TestRunner:
         report_suffix = os.environ.get("MX_REPORT_SUFFIX")
         if report_suffix:
             tmppath,ext = os.path.splitext(path)
-            path = f"{tmppath}_{report_suffix}{ext}"
+            path = f"{tmppath}{report_suffix}{ext}"
 
         report_data = []
         for result in self.results:
