@@ -562,8 +562,19 @@
                     dir: ".",
                 }
             ],
+            publishArtifacts: [
+                {
+                    name: "reports-merged.json",
+                    dir: ".",
+                }
+            ],
             run: [
-                "ls",
+                [
+                    "ls", "-la",
+                ],
+                [
+                    "pwd",
+                ],
             ]
         },
     ],

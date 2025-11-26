@@ -513,8 +513,14 @@
                 "--mx-report", "retagger-report.json",
                 "--exit-success-on-failures",
             ],
+            [
+                "ls", "-la"
+            ],
+            [
+                "pwd"
+            ],
         ],
-        logs+: ["*/*/retagger-report*.json"],
+        logs+: ["main/retagger-report*.json"],
     }),
 
     coverage_gate:: $.graalpy_gate + task_spec({
