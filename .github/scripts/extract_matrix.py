@@ -204,6 +204,7 @@ class Job:
             pattern = self.common_glob([a["name"] for a in artifacts])
             return Artifact(pattern, os.path.normpath(artifacts[0].get("dir", ".")))
         return None
+    
 
     @staticmethod
     def flatten_command(args: list[str | list[str]]) -> list[str]:

@@ -159,9 +159,10 @@ jobs:
         uses: actions/download-artifact@v5
         if: ${{ matrix.require_artifact }}
         with:
-          name: ${{ matrix.require_artifact[0] }}
+          pattern: ${{ matrix.require_artifact[0] }}
           merge-multiple: true
         continue-on-error: true
+      
       - name: Export artifact paths Linux
         if: ${{ matrix.require_artifact }}
         run: |

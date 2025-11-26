@@ -339,7 +339,7 @@
             environment+: {
                 TAGGED_UNITTEST_PARTIAL: "%d/%d" % [i, num],
                 RETAGGER_BATCH_NO: i,
-                MX_REPORT_SUFFIX: "_batch_%d: % [i],
+                MX_REPORT_SUFFIX: "_batch_%d" % [i],
             },
             variations+::["batch" + i]
         }),
@@ -513,14 +513,8 @@
                 "--mx-report", "retagger-report.json",
                 "--exit-success-on-failures",
             ],
-            [
-                "ls", "-la"
-            ],
-            [
-                "pwd"
-            ],
         ],
-        logs+: ["main/retagger-report*.json"],
+        logs+: ["*/*/retagger-report*.json"],
     }),
 
     coverage_gate:: $.graalpy_gate + task_spec({

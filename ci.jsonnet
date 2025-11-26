@@ -242,7 +242,7 @@
             "linux:amd64:jdk-latest"     : tier1,
         }),
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + batches(RETAGGER_SPLIT) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3                      + require(GPY_NATIVE_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier2                      + require(GPY_NATIVE_STANDALONE),
             "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00"),
             "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00"),
             "windows:amd64:jdk-latest"   : weekly    + t("20:00:00"),
@@ -546,6 +546,24 @@
                 ["git", "-C", "graalvm-website", "push", "origin", "HEAD"],
                 ["git", "branch", "--force", "--no-track", "published"],
                 ["git", "push", "--force", "origin", "published"],
+            ]
+        },
+        {
+            name: "python-unittest-retagger-merge",
+            targets: ["tier3"],
+            capabilities: ["linux", "amd64"],
+            packages: {
+                mx: "7.34.1",
+                python3: "==3.12.8",
+            },
+            requireArtifacts: [
+                {
+                    name: "python-unittest-retagger*",
+                    dir: ".",
+                }
+            ],
+            run: [
+                "ls",
             ]
         },
     ],
