@@ -18,6 +18,7 @@ DEFAULT_ENV = {
     "GITHUB_CI": "true"
 }
 
+RETAGGER_EXCLUSION='^(?=.*python)(?!.*(retagger)).*$'
 
 # If any of these terms are in the job json, they do not run in public
 # infrastructure
@@ -31,7 +32,11 @@ JOB_EXCLUSION_TERMS = (
 
     # Python 3.8.10 (matrix.python_version) is not available for linux aarch64
     # cf. https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
-    "linux-aarch64"
+    "linux-aarch64",
+
+    # WIP
+    "darwin",
+    "linux"
 )
 
 DOWNLOADS_LINKS = {
@@ -290,6 +295,9 @@ def get_tagged_jobs(buildspec, target, filter=None):
 
 
 def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
+    # Except on schedule, retagger job should be forced by user input
+    if not filter: 'python-svm-build|python-unittest-gate' #filter=RETAGGER_EXCLUSION
+
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
     tagged_jobs = get_tagged_jobs(buildspec, target, filter=filter)
