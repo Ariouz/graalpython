@@ -1516,7 +1516,7 @@ def main():
     # merge-tags-from-report command declaration
     merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
     merge_tags_parser.set_defaults(main=main_merge_tags)
-    merge_tags_parser.add_argument('platform')
+    merge_tags_parser.add_argument('--platform', default=CURRENT_PLATFORM)
     merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command
