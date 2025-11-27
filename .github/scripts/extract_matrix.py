@@ -36,7 +36,7 @@ JOB_EXCLUSION_TERMS = (
 
     # WIP
     "darwin",
-    "linux"
+    "windows"
 )
 
 DOWNLOADS_LINKS = {
@@ -296,7 +296,7 @@ def get_tagged_jobs(buildspec, target, filter=None):
 
 def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
     # Except on schedule, retagger job should be forced by user input
-    if not filter: 'python-svm-build|python-unittest-gate' #filter=RETAGGER_EXCLUSION
+    if not filter: filter = filter=RETAGGER_EXCLUSION
 
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
