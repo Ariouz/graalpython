@@ -210,8 +210,8 @@ jobs:
         shell: bash
         working-directory: main
         run: |
-          tar cf ${{ matrix.provide_artifact[0] }}.tar ${{ matrix.provide_artifact[1] }}
           ls && pwd
+          tar cf ${{ matrix.provide_artifact[0] }}.tar ${{ matrix.provide_artifact[1] }}
       - name: Upload artifacts
         if: ${{ matrix.provide_artifact }}
         uses: actions/upload-artifact@v5

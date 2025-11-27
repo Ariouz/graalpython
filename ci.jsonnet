@@ -101,7 +101,7 @@
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
     local TAGGED_UNITTESTS_SPLIT    = 8,
     local COVERAGE_SPLIT            = 3,
-    local RETAGGER_SPLIT            = 8,
+    local RETAGGER_SPLIT            = 12,
 
     // -----------------------------------------------------------------------------------------------------------------
     // gates
@@ -564,28 +564,19 @@
             ],
             publishArtifacts: [
                 {
-                    name: "reports-merged.json",
-                    dir: "main/retagger-reports",
-                    patterns: "reports-merged.json"
+                    name: "retagger.diff",
+                    dir: ".",
+                    patterns: ["diff_reports"]
                 }
             ],
             run: [
-                [
-                    "ls", "-la",
-                ],
-                [
-                    "pwd",
-                ],
-                ["mkdir", "-p", "retagger-reports"],
-                ["sh", "-c", "mv retagger-report*.json retagger-reports"],
-                ["cd", "retagger-reports"],
-                ["python3 ../.github/scripts/merge_retagger_results.py"],
-                ["ls"],
-                ["cd", ".."],
-                ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "linux-x86_64", "../retagger-reports/reports-merged.json"],
-                ["git", "diff", ">>", "diff_reports"],
-                ["cat", "diff_reports"],
-                // run mx merge tags + git diff + export git diff
+                ["mkdir", "-p", "../retagger-reports"],
+                ["sh", "-c", "mv retagger-report*.json ../retagger-reports"],
+                ["cd", "../retagger-reports"],
+                ["python3", "../main/.github/scripts/merge_retagger_results.py"],
+                ["cd", "../main"],
+                ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "../retagger-reports/reports-merged.json"],
+                ["sh", "-c", "git diff >> diff_reports"],
             ]
         },
     ],

@@ -513,12 +513,6 @@
                 "--mx-report", "retagger-report.json",
                 "--exit-success-on-failures",
             ],
-            [
-                "ls", "-la"
-            ],
-            [
-                "pwd"
-            ],
         ],
         logs+: ["main/retagger-report*.json"],
     }),
