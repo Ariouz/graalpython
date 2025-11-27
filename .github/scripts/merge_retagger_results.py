@@ -1,13 +1,7 @@
 # ================================
 # 
-# OK- Read No of retagger batches
-# OK- Artifact is exported as python-unittest-retagger-gate-batch{NO}-{OS}-{ARCH}-jdk-latest_logs
-# 
-# list => new job => require_artifacts: reports list
-# 
-# Download all artifacts => extraxt => filter by name retagger-report
-# OK- Merge => report-merged.json
-# run mx merge-tags-from-report => git diff => export git diff artifact
+# This script is used by ci to merge several retagger report JSON files, which is then used
+# by running python3 runner.py merge-tags-from-reports reports-merged.json
 #
 # ================================
 
@@ -18,14 +12,15 @@ import glob
 import argparse
 from dataclasses import dataclass
 
-# Tests' status we want to merge and export
+# status we want to focus on
 EXPORT_STATUS = ["FAILED"]
 
 @dataclass
 class Test:
-    name: str
-    status: str
-    duration: str
+    name:       str
+    status:     str
+    duration:   str
+
 
 def read_report(path: str) -> list[Test]:
     tests = []
@@ -39,15 +34,16 @@ def read_report(path: str) -> list[Test]:
 
 def merge_tests(report: list[Test], merged: dict[str, dict]):
     for test in report:
-        if test.name not in merged: merged[test.name] = test.__dict__
+        if test.name not in merged:
+            merged[test.name] = test.__dict__
 
 def export_reports(merged: dict[str, dict], outfile: str):
     with open(outfile, "w") as f:
         json.dump(list(merged.values()), f)
-    print(f"=== Exported {len(merged)} failing tests to {f.name} ===")
+    print(f"=== Exported {len(merged)} ({EXPORT_STATUS}) tests to {f.name} ===")
 
 def merge_reports(reports: list[str], outfile: str):
-    merged_reports = {} # key: test_name
+    merged_reports = {}
     for report in reports:
         report_tests = read_report(report)
         merge_tests(report_tests, merged_reports)
