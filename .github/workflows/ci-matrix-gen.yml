@@ -7,6 +7,9 @@ on:
         type: string
         description: Job selection (Python regex)
         required: false
+        default: ^(?=.*python)(?!.*(windows|darwin|retagger)).*$
+  pull_request:
+    
 
 jobs:
   generate-tier1:
@@ -15,7 +18,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     env:
       TARGET: tier1
-      JOBS: ${{ inputs.jobs_to_run }}
+      JOBS: ${{ inputs.jobs_to_run || '^(?=.*python)(?!.*(windows|darwin|retagger)).*$' }}
     steps: &generate_matrix
       - uses: actions/checkout@v4
       - name: Download sjsonnet
