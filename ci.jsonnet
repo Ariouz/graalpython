@@ -548,7 +548,7 @@
                 ["git", "push", "--force", "origin", "published"],
             ]
         },
-        local platforms = [["linux", "amd64"], ["linux", "aarch64"]];
+        local platforms = [["linux", "amd64"]];
         [{
             name: "python-unittest-retagger-merge" + platform[0] + "-" + platform[1],
             targets: ["tier3"],
