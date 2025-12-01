@@ -30,11 +30,6 @@ JOB_EXCLUSION_TERMS = (
     "python-svm-unittest",
     "cpython-gate",
 
-    # Python 3.8.10 (matrix.python_version) is not available for linux aarch64
-    # cf. https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
-    #"linux-aarch64",
-
-    # WIP
     #"darwin",
     "windows"
 )
