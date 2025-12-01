@@ -35,8 +35,8 @@ JOB_EXCLUSION_TERMS = (
     #"linux-aarch64",
 
     # WIP
-    "darwin",
-    #"windows"
+    #"darwin",
+    "windows"
 )
 
 DOWNLOADS_LINKS = {
