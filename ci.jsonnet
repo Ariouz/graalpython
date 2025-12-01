@@ -243,7 +243,7 @@
         }),
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + batches(RETAGGER_SPLIT) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2        + require(GPY_NATIVE_STANDALONE),
-            "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00"),
+            "linux:aarch64:jdk-latest"   : tier2        + require(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00"),
             "windows:amd64:jdk-latest"   : weekly    + t("20:00:00"),
         }),
@@ -548,10 +548,11 @@
                 ["git", "push", "--force", "origin", "published"],
             ]
         },
-        {
-            name: "python-unittest-retagger-merge",
+        local platforms = [["linux", "amd64"], ["linux", "aarch64"]];
+        [{
+            name: "python-unittest-retagger-merge" + platform[0] + "-" + platform[1],
             targets: ["tier3"],
-            capabilities: ["linux", "amd64"],
+            capabilities: platform,
             packages: {
                 mx: "7.34.1",
                 python3: "==3.12.8",
@@ -564,7 +565,7 @@
             ],
             publishArtifacts: [
                 {
-                    name: "retagger.diff",
+                    name: "retagger_"+platform[0] + "-" + platform[1]+".diff",
                     dir: ".",
                     patterns: ["diff_reports"]
                 }
@@ -578,7 +579,7 @@
                 ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "../retagger-reports/reports-merged.json"],
                 ["sh", "-c", "git diff >> diff_reports"],
             ]
-        },
+        } for platform in platforms],
     ],
 }
 
