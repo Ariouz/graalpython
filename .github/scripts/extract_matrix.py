@@ -18,7 +18,7 @@ DEFAULT_ENV = {
     "GITHUB_CI": "true"
 }
 
-RETAGGER_EXCLUSION='^(?=.*python)(?!.*(retagger)).*$'
+PR_JOBS='^(?=.*python)(?!.*(retagger|dsl)).*$'
 
 # If any of these terms are in the job json, they do not run in public
 # infrastructure
