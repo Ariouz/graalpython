@@ -122,6 +122,7 @@ DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
 _COLLECTING_COVERAGE = False
 
 CI = get_boolean_env("CI")
+GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
@@ -254,9 +255,9 @@ def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
 
-    if os.environ.get("GITHUB_CI"):
-        build_args += ["-Ob", "-J-XX:MaxRAMPercentage=90.0", "-H:DeadlockWatchdogInterval=0"]
-
+    if GITHUB_CI:
+        build_args += ["-Ob", "-J-Xmx14g", "-H:+UnlockExperimentalVMOptions", "-H:DeadlockWatchdogInterval=0"]
+# "-J-XX:MaxRAMPercentage=90.0"
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
     else:
@@ -832,7 +833,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     
     print(f"[DEBUG] GITHUB_CI env: {os.environ.get('GITHUB_CI')}")
-    if os.environ.get("GITHUB_CI"):
+    if GITHUB_CI:
         print("[DEBUG] Running in GitHub Ci")
         mx_args.append("--extra-image-builder-argument=-Ob")
     else:
