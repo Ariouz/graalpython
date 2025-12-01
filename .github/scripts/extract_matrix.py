@@ -35,7 +35,7 @@ JOB_EXCLUSION_TERMS = (
     #"linux-aarch64",
 
     # WIP
-    "darwin",
+    #"darwin",
     "windows"
 )
 
