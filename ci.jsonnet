@@ -548,11 +548,10 @@
                 ["git", "push", "--force", "origin", "published"],
             ]
         },
-        local platforms = [["linux", "amd64"]];
-        [{
-            name: "python-unittest-retagger-merge" + platform[0] + "-" + platform[1],
+        {
+            name: "python-unittest-retagger-merge",
             targets: ["tier3"],
-            capabilities: platform,
+            capabilities: ["linux", "amd64"],
             packages: {
                 mx: "7.34.1",
                 python3: "==3.12.8",
@@ -565,7 +564,7 @@
             ],
             publishArtifacts: [
                 {
-                    name: "retagger_"+platform[0] + "-" + platform[1]+".diff",
+                    name: "retagger.diff",
                     dir: ".",
                     patterns: ["diff_reports"]
                 }
@@ -579,7 +578,7 @@
                 ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "../retagger-reports/reports-merged.json"],
                 ["sh", "-c", "git diff >> diff_reports"],
             ]
-        } for platform in platforms],
+        },
     ],
 }
 
