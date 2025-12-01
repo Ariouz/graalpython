@@ -36,7 +36,7 @@ JOB_EXCLUSION_TERMS = (
 
     # WIP
     "darwin",
-    "windows"
+    #"windows"
 )
 
 DOWNLOADS_LINKS = {
