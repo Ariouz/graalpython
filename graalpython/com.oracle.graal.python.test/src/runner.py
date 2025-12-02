@@ -502,18 +502,22 @@ def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: 
             tag_by_id[tag.test_id] = tag
 
     for test_id, status in status_by_id.items():
+        print(f"Processing: {test_id} with status {status}")
+
         if tag := tag_by_id.get(test_id):
             if status == TestStatus.SUCCESS:
                 tag_by_id[test_id] = tag.with_key(tag_platform)
             elif (untag_skipped and status == TestStatus.SKIPPED
                   or untag_failed and status == TestStatus.FAILURE):
                 tag = tag.without_key(tag_platform)
+                print(f"Removed key {tag_platform}")
                 if tag:
                     tag_by_id[test_id] = tag
                 else:
                     del tag_by_id[test_id]
         elif status == TestStatus.SUCCESS:
             tag_by_id[test_id] = Tag.for_key(test_id, tag_platform)
+        print(f"Result for {test_id}: {tag_by_id.get(test_id, None)}")
 
     for exclusion in exclusions:
         if tag := tag_by_id.get(exclusion.test_id):

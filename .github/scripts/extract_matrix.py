@@ -295,8 +295,7 @@ def get_tagged_jobs(buildspec, target, filter=None):
 
 
 def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
-    # Except on schedule, retagger job should be forced by user input
-    if not filter: filter = filter=PR_JOBS
+    if not filter: filter = PR_JOBS
 
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
