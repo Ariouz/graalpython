@@ -256,8 +256,8 @@ def libpythonvm_build_args():
     build_args += bytecode_dsl_build_args()
 
     if GITHUB_CI:
-        build_args += ["-Ob", "-J-Xmx14g", "-H:+UnlockExperimentalVMOptions", "-H:DeadlockWatchdogInterval=0"]
-# "-J-XX:MaxRAMPercentage=90.0"
+        build_args += ["-Ob", "-J-Xms7g", "--parallelism=1","-H:+UnlockExperimentalVMOptions"]
+# "-J-XX:MaxRAMPercentage=90.0",, "-H:DeadlockWatchdogInterval=0"
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
     else:
