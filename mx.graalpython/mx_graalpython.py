@@ -258,6 +258,7 @@ def libpythonvm_build_args():
 
     if GITHUB_CI:        
         # github ci specific build options:
+        # use quick build
         # use all mem if total mem is < 7g, otherwise use 90% capped to 14g
         # enable parallism only if cpu cores is >= 4 and build_mem >= 7g
         
