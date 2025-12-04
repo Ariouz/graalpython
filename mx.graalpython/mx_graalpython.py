@@ -266,7 +266,7 @@ def github_ci_build_args():
             # f"-J-Xms{build_mem}m",
             f"-J-Xms7g",
             f"--parallelism={parallelism}",
-            "-XX:GCTimeRatio=3"
+            "-J-XX:GCTimeRatio=3"
         ]
 
 def libpythonvm_build_args():
