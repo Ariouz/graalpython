@@ -262,7 +262,7 @@ def libpythonvm_build_args():
         # use all mem if total mem is < 7g, otherwise use 90% capped to 14g
         # enable parallism only if cpu cores is >= 4 and build_mem >= 7g
         
-        total_mem = psutil.virtual_memory.total / (1024 ** 3)
+        total_mem = psutil.virtual_memory().total / (1024 ** 3)
         max_mem = 14*1024
         min_mem = int(1024 * (total_mem if total_mem < 7 else total_mem * .9))
         os_cpu = os.cpu_count() or int(os.environ.get("NUMBER_OF_PROCESSORS", 1)) or 1
