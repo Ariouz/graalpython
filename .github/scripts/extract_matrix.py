@@ -31,7 +31,7 @@ JOB_EXCLUSION_TERMS = (
     "cpython-gate",
 
     #"darwin",
-    "windows"
+    # "windows"
 )
 
 DOWNLOADS_LINKS = {
@@ -125,10 +125,12 @@ class Job:
         filename = download_link.split('/')[-1]
 
         if self.runs_on == "windows-latest":
-            return (f"""Invoke-WebRequest -Uri {download_link} -OutFile {filename}
+            return (f"""
+            Invoke-WebRequest -Uri {download_link} -OutFile {filename}
             $dirname = (& tar -tzf {filename} | Select-Object -First 1).Split('/')[0]
             tar -xzf {filename}
-            Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)""")
+            Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)"
+            """)
 
         return (f"wget -q {download_link} && "
             f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "

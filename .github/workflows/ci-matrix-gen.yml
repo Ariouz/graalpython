@@ -122,7 +122,7 @@ jobs:
 
       # Setup mx, buildtools and labsjdk
       - name: Get mx, buildtools, and labsjdk
-        if: ${{ runner.os != 'Windows' && matrix.mx_version }}
+        if: ${{ matrix.mx_version }}
         shell: bash
         run: |
           git clone https://github.com/graalvm/mx
@@ -247,6 +247,7 @@ jobs:
           env
           ${{ matrix.run_steps }}
       - name: Run on Windows
+        working-directory: main
         if: ${{ matrix.run_steps && runner.os == 'Windows' }}
         shell: cmd
         run: |
