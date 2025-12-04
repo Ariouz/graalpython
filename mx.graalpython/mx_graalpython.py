@@ -256,8 +256,11 @@ def libpythonvm_build_args():
     build_args += bytecode_dsl_build_args()
 
     if GITHUB_CI:
-        build_args += ["-Ob", "-J-Xms7g", "--parallelism=1","-H:+UnlockExperimentalVMOptions"]
-# "-J-XX:MaxRAMPercentage=90.0",, "-H:DeadlockWatchdogInterval=0"
+        # on <= 3 cores cpus and limited ram, build is faster with only 1 core
+        os_cpu = os.cpu_count() or int(os.environ.get("NUMBER_OF_PROCESSORS", 1)) or 1
+        parallelism = os_cpu if os_cpu >= 4 else 1
+        build_args += ["-Ob", "-J-XX:MaxRAMPercentage=90.0", f"--parallelism={parallelism}"]
+
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
     else:
