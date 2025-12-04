@@ -253,6 +253,10 @@ def _is_overridden_native_image_arg(prefix):
 
 
 def github_ci_build_args():
+    # github ci specific build options:
+    # use quick build
+    # use all mem if total mem is < 8g, otherwise use 90% capped to 14g
+    # enable parallism only if cpu cores is >= 4 and build_mem >= 7g
     total_mem = psutil.virtual_memory().total / (1024 ** 3)
     min_bound = 8
     max_mem = 14*1024
@@ -263,8 +267,7 @@ def github_ci_build_args():
     parallelism = os_cpu if os_cpu >= 4 and build_mem >= min_bound*1024 else 1
     
     return ["-Ob",
-            # f"-J-Xms{build_mem}m",
-            f"-J-Xms7g",
+            f"-J-Xms{build_mem}m",
             f"--parallelism={parallelism}",
             "-J-XX:GCTimeRatio=3"
         ]
@@ -273,13 +276,7 @@ def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
 
-    if GITHUB_CI:        
-        # github ci specific build options:
-        # use quick build
-        # use all mem if total mem is < 8g, otherwise use 90% capped to 14g
-        # enable parallism only if cpu cores is >= 4 and build_mem >= 7g
-        
-        
+    if GITHUB_CI:              
         build_args += github_ci_build_args()
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
