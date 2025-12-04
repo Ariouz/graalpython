@@ -259,16 +259,17 @@ def libpythonvm_build_args():
     if GITHUB_CI:        
         # github ci specific build options:
         # use quick build
-        # use all mem if total mem is < 7g, otherwise use 90% capped to 14g
+        # use all mem if total mem is < 8g, otherwise use 90% capped to 14g
         # enable parallism only if cpu cores is >= 4 and build_mem >= 7g
         
         total_mem = psutil.virtual_memory().total / (1024 ** 3)
+        min_bound = 8
         max_mem = 14*1024
-        min_mem = int(1024 * (total_mem if total_mem < 7 else total_mem * .9))
+        min_mem = int(1024 * (total_mem if total_mem < min_bound else total_mem * .9))
         os_cpu = os.cpu_count() or int(os.environ.get("NUMBER_OF_PROCESSORS", 1)) or 1
         
         build_mem = min(min_mem, max_mem)
-        parallelism = os_cpu if os_cpu >= 4 and build_mem >= 7*1024 else 1
+        parallelism = os_cpu if os_cpu >= 4 and build_mem >= min_bound*1024 else 1
         build_args += ["-Ob", f"-J-Xms{build_mem}m", f"--parallelism={parallelism}"]
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
