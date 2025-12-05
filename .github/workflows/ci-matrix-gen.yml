@@ -7,7 +7,11 @@ on:
         type: string
         description: Job selection (Python regex)
         required: false
-  pull_request:
+  workflow_call:
+    inputs:
+      jobs_to_run:
+        required: true
+        type: string
   schedule:
     - cron: '0 0 * * 1'
 

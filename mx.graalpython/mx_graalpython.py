@@ -272,14 +272,8 @@ def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
 
-    if GITHUB_CI:        
-        # github ci specific build options:
-        # use quick build
-        # use all mem if total mem is < 8g, otherwise use 90% capped to 14g
-        # enable parallism only if cpu cores is >= 4 and build_mem >= 7g
-        
-        
-        build_args += github_ci_build_args()
+    if os.environ.get("GITHUB_CI"):
+        build_args += ["-Ob", "-J-XX:MaxRAMPercentage=90.0"]
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
