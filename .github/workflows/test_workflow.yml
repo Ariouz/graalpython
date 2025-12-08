@@ -29,5 +29,5 @@ jobs:
           echo "new text" >> new_file.txt
           git add -A
           git commit -m "Weekly retags"
-          git push weelky_retagger
+          git push --set-upstream weelky_retagger
           gh pr create --B master -d --title "TEST: Merge Weekly Retags"
