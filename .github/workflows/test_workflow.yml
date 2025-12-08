@@ -1,10 +1,12 @@
 name: Test
+on:
+  workflow_dispatch:
 
 jobs:
   edit:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN= ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps: &buildsteps
 
       - name: Actions/Checkout
@@ -15,4 +17,18 @@ jobs:
           ls -la
           pwd
           gh --version
+          git remote -v
+          echo "Set new repo origin url"
+          echo $GH_TOKEN
+          git remote set-url origin https://$GH_TOKEN@github.com/Ariouz/graalpython.git
+          git remote -v
+          git config --global user.name "Retagger Workflow" 
+          git config --global user.email "Retagger_Workflow@oracle.com"
+          git fetch origin
           git branch
+          git checkout -b weekly_retagger_${{ github.run_id }} origin/master
+          echo "new text" >> new_file.txt
+          git add -A
+          git commit -m "Weekly retags"
+          git push --set-upstream origin weekly_retagger_${{ github.run_id }}
+          gh pr create -B master -d --title "TEST: Merge Weekly Retags" --body "Apply weekly retags"
