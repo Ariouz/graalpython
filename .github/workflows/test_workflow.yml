@@ -22,6 +22,7 @@ jobs:
           echo $GH_TOKEN
           git remote set-url origin https://$GH_TOKEN@github.com/Ariouz/graalpython.git
           git remote -v
+          git config --global user.name "Retagger Workflow" user.email "Retagger_Workflow@oracle.com"
           git branch
           git checkout -b weelky_retagger
           echo "new text" >> new_file.txt
