@@ -18,3 +18,9 @@ jobs:
           pwd
           gh --version
           git branch
+          git checkout -b weelky_retagger master
+          echo "new text" >> new_file.txt
+          git add -A
+          git commit -m "Weekly retags"
+          git push weelky_retagger
+          gh pr create --B master -d --title "TEST: Merge Weekly Retags"
