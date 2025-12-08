@@ -25,9 +25,9 @@ jobs:
           git config --global user.name "Retagger Workflow" 
           git config --global user.email "Retagger_Workflow@oracle.com"
           git branch
-          git checkout -b weekly_retagger
+          git checkout -b weekly_retagger_${{ github.run_id }}
           echo "new text" >> new_file.txt
           git add -A
           git commit -m "Weekly retags"
-          git push --set-upstream origin weekly_retagger
+          git push --set-upstream origin weekly_retagger_${{ github.run_id }}
           gh pr create -B master -d --title "TEST: Merge Weekly Retags"
