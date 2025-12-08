@@ -30,4 +30,4 @@ jobs:
           git add -A
           git commit -m "Weekly retags"
           git push --set-upstream origin weekly_retagger_${{ github.run_id }}
-          gh pr create -B master -d --title "TEST: Merge Weekly Retags"
+          gh pr create -B master -d --title "TEST: Merge Weekly Retags" --fill
