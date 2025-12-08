@@ -17,6 +17,10 @@ jobs:
           ls -la
           pwd
           gh --version
+          git remote -v
+          echo "Set new repo origin url"
+          git remote set-url origin https://$GH_TOKEN@github.com/Ariouz/graalpython.git
+          git remote -v
           git branch
           git checkout -b weelky_retagger
           echo "new text" >> new_file.txt
