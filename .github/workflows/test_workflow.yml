@@ -19,6 +19,7 @@ jobs:
           gh --version
           git remote -v
           echo "Set new repo origin url"
+          echo $GH_TOKEN
           git remote set-url origin https://$GH_TOKEN@github.com/Ariouz/graalpython.git
           git remote -v
           git branch
