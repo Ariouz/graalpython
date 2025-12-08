@@ -18,7 +18,7 @@ jobs:
           pwd
           gh --version
           git branch
-          git checkout -b weelky_retagger master
+          git checkout -b weelky_retagger
           echo "new text" >> new_file.txt
           git add -A
           git commit -m "Weekly retags"
