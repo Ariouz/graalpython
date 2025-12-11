@@ -102,8 +102,6 @@ class Job:
         # TODO: support more packages
         system_packages = []
         for k, _ in self.job.get("packages", {}).items():
-            if k in ["python3", "python", "mx"]:
-                continue
             if k.startswith("pip:"):
                 continue
             elif k.startswith("00:") or k.startswith("01:"):
