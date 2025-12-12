@@ -66,11 +66,33 @@ jobs:
     steps: &buildsteps
 
       - name: Setup env
+        shell: bash
+        if: runner.os != 'Windows'
         run: |
-          for kv in $(cat tmp | jq -r '.[] | to_entries[] | "\(.key)=\(.value)"'); do
-            echo "$kv"; 
-            echo $kv >> $GITHUB_ENV
-          done
+          matrix_env='${{ toJson(matrix.env) }}'
+          echo $matrix_env | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> tmp.env
+          while IFS= read -r line; do
+            echo "$line" >> $GITHUB_ENV
+          done < tmp.env
+          rm tmp.env
+          cat $GITHUB_ENV
+
+      - name: Setup env (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $matrix_env = '${{ toJson(matrix.env) }}'
+          $envs = $matrix_env | ConvertFrom-Json
+          foreach ($pair in $envs.PSObject.Properties) {
+            "$($pair.Name)=$($pair.Value)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+          Get-Content $env:GITHUB_ENV
+
+      - name: Print environment variables
+        shell: bash
+        run: |
+          echo "Environment variables:"
+          env | sort
 
       - name: Actions/Checkout
         uses: actions/checkout@main
@@ -257,7 +279,7 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier2, tier1]
     runs-on: ${{ matrix.os }}
-    env: ${{ matrix.env }}
+    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
@@ -268,7 +290,7 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier3, tier2]
     runs-on: ${{ matrix.os }}
-    env: ${{ matrix.env }}
+    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
