@@ -58,12 +58,19 @@ jobs:
   tier1:
     needs: generate-tier1
     runs-on: ${{ matrix.os }}
-    env: ${{ matrix.env }}
+    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
     steps: &buildsteps
+
+      - name: Setup env
+        run: |
+          for kv in $(cat tmp | jq -r '.[] | to_entries[] | "\(.key)=\(.value)"'); do
+            echo "$kv"; 
+            echo $kv >> $GITHUB_ENV
+          done
 
       - name: Actions/Checkout
         uses: actions/checkout@main
