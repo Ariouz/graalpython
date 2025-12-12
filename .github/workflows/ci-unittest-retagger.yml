@@ -22,6 +22,8 @@ jobs:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ${{ github.event.inputs.jobs_to_run || 'python-unittest-retagger' }}
+      logs_retention_days: 0
+      artifacts_retention_days: 0
 
   merge_all_reports:
     runs-on: ubuntu-latest
