@@ -51,7 +51,7 @@ jobs:
           git config --global user.name "Retagger Workflow" 
           git config --global user.email "Retagger_Workflow@oracle.com"
           git fetch origin
-          git checkout -b weekly_retagger_${{ github.run_id }} origin/master
+          git checkout -b weekly_retagger_${{ github.run_id }} origin/${{ github.head_ref || github.ref_name }} 
 
       - name: Merge retagger reports
         env:
