@@ -19,9 +19,13 @@ jobs:
   run-retagger:
     if: success()
     needs: build-standalone-artifacts
+    strategy:
+      matrix:
+        target: [linux-amd64, linux-aarch64, windows-amd64]
     uses: ./.github/workflows/ci-matrix-gen.yml
+    name: Run retagger on ${{ matrix.target }}
     with:
-      jobs_to_run: ${{ github.event.inputs.jobs_to_run || 'python-unittest-retagger' }}
+      jobs_to_run: ${{ github.event.inputs.jobs_to_run || format('^python-unittest-retagger.*{0}.*', matrix.target) }}
 
   merge_all_reports:
     runs-on: ubuntu-latest
