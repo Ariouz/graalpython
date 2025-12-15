@@ -20,6 +20,7 @@ jobs:
     if: success()
     needs: build-standalone-artifacts
     strategy:
+      fail-fast: false
       matrix:
         target: [linux-amd64, linux-aarch64, windows-amd64]
     uses: ./.github/workflows/ci-matrix-gen.yml
