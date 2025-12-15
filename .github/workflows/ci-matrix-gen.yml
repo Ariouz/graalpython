@@ -13,9 +13,6 @@ on:
         required: true
         type: string
 
-  schedule:
-    - cron: '0 0 * * 1'
-
 jobs:
   generate-tier1:
     runs-on: ubuntu-latest
