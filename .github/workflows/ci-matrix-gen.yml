@@ -72,7 +72,6 @@ jobs:
             eval "echo \"$line\"" >> $GITHUB_ENV
           done < tmp.env
           rm tmp.env
-          echo "GITHUB ENV" && cat $GITHUB_ENV
 
       - name: Setup env (Windows)
         if: runner.os == 'Windows'
@@ -85,13 +84,6 @@ jobs:
             $value = $ExecutionContext.InvokeCommand.ExpandString($full_value)
             "$($pair.Name)=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           }
-          Get-Content $env:GITHUB_ENV
-
-      - name: Print environment variables
-        shell: bash
-        run: |
-          echo "Environment variables:"
-          env | sort
 
       - name: Actions/Checkout
         uses: actions/checkout@main
