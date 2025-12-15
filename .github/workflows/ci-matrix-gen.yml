@@ -69,10 +69,10 @@ jobs:
           matrix_env='${{ toJson(matrix.env) }}'
           echo $matrix_env | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> tmp.env
           while IFS= read -r line; do
-            echo "$line" >> $GITHUB_ENV
+            eval "echo \"$line\"" >> $GITHUB_ENV
           done < tmp.env
           rm tmp.env
-          cat $GITHUB_ENV
+          echo "GITHUB ENV" && cat $GITHUB_ENV
 
       - name: Setup env (Windows)
         if: runner.os == 'Windows'
@@ -81,7 +81,9 @@ jobs:
           $matrix_env = '${{ toJson(matrix.env) }}'
           $envs = $matrix_env | ConvertFrom-Json
           foreach ($pair in $envs.PSObject.Properties) {
-            "$($pair.Name)=$($pair.Value)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            $full_value = $pair.Value -replace '%([A-Za-z0-9_]+)%', '$env:$1'
+            $value = $ExecutionContext.InvokeCommand.ExpandString($full_value)
+            "$($pair.Name)=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           }
           Get-Content $env:GITHUB_ENV
 
