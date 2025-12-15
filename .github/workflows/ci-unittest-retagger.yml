@@ -22,11 +22,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [linux-amd64, linux-aarch64, windows-amd64]
+        target: [linux-amd64, linux-aarch64]
     uses: ./.github/workflows/ci-matrix-gen.yml
     name: Run retagger on ${{ matrix.target }}
     with:
       jobs_to_run: ${{ github.event.inputs.jobs_to_run || format('^python-unittest-retagger.*{0}.*', matrix.target) }}
+
+  run-retagger-windows:
+    if: success()
+    needs: [build-standalone-artifacts, run-retagger]
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    name: Run retagger on windows-amd64
+    with:
+      jobs_to_run: ${{ github.event.inputs.jobs_to_run || '^python-unittest-retagger.*windows-amd64.*' }}
+
 
   merge_all_reports:
     runs-on: ubuntu-latest

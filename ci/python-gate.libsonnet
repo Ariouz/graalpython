@@ -153,14 +153,14 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
             },
             amd64: {},
             aarch64: {},
         },
         windows: {
             common: {
-                PATH: "%MAVEN_HOME%;%PATH%",
+                PATH: "%MAVEN_HOME%\\bin;%PATH%",
             },
             amd64: {},
             aarch64: {},
