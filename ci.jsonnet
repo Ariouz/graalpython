@@ -101,7 +101,7 @@
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
     local TAGGED_UNITTESTS_SPLIT    = 8,
     local COVERAGE_SPLIT            = 3,
-    local RETAGGER_SPLIT            = 12,
+    local RETAGGER_SPLIT            = 16,
 
     // -----------------------------------------------------------------------------------------------------------------
     // gates
@@ -243,7 +243,7 @@
         }),
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + batches(RETAGGER_SPLIT) + platform_spec({
             "linux:amd64:jdk-latest"     : weekly    + t("20:00:00"),
-            "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00") + batches(RETAGGER_SPLIT + 4),
+            "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00"),
             "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00"),
             "windows:amd64:jdk-latest"   : weekly    + t("20:00:00"),
         }),
