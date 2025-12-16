@@ -19,16 +19,26 @@ jobs:
   run-retagger:
     if: success()
     needs: build-standalone-artifacts
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [linux-amd64, linux-aarch64]
     uses: ./.github/workflows/ci-matrix-gen.yml
+    name: Run retagger on ${{ matrix.target }}
     with:
-      jobs_to_run: ${{ github.event.inputs.jobs_to_run || 'python-unittest-retagger' }}
-      logs_retention_days: 0
-      artifacts_retention_days: 0
+      jobs_to_run: ${{ github.event.inputs.jobs_to_run || format('^python-unittest-retagger.*{0}.*', matrix.target) }}
+
+  run-retagger-windows:
+    needs: [build-standalone-artifacts, run-retagger]
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    name: Run retagger on windows-amd64
+    with:
+      jobs_to_run: ${{ github.event.inputs.jobs_to_run || '^python-unittest-retagger.*windows-amd64.*' }}
+
 
   merge_all_reports:
     runs-on: ubuntu-latest
-    needs: run-retagger
-    if: ${{ success() }}
+    needs: run-retagger-windows
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps: 
@@ -61,7 +71,7 @@ jobs:
         working-directory: main
         run: |
           mkdir -p ../retagger-reports ../diffs
-          mv retagger-report*.json ../retagger-reports
+          mv retagger-report*.json ../retagger-reports || true
 
           declare -a os_list=("linux-x86_64" "linux-aarch64" "win32-AMD64")
           for os in "${os_list[@]}"; do
