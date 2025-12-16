@@ -267,6 +267,7 @@ jobs:
       - name: Upload logs
         if: ${{ matrix.logs }}
         uses: actions/upload-artifact@v5
+        continue-on-error: true
         with:
           name: ${{ format('{0}_logs', matrix.name) }}
           path: |
