@@ -29,7 +29,6 @@ jobs:
       jobs_to_run: ${{ github.event.inputs.jobs_to_run || format('^python-unittest-retagger.*{0}.*', matrix.target) }}
 
   run-retagger-windows:
-    if: success()
     needs: [build-standalone-artifacts, run-retagger]
     uses: ./.github/workflows/ci-matrix-gen.yml
     name: Run retagger on windows-amd64
