@@ -1134,7 +1134,7 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
         loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
         tagged_ids = None
         if use_tags and config.tags_dir:
-            tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys) and not tag.is_platform_excluded(CURRENT_PLATFORM)]
+            tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys)]
             if not tagged_ids:
                 return None
         test_module = test_path_to_module(test_file)
@@ -1280,6 +1280,8 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
 
                 if not keys and not is_exclusion:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
+
+                print("[DEBUG] Reading tag:", test, keys)
 
                 tag = Tag(
                     TestId(test_path, test),
