@@ -1218,6 +1218,8 @@ class Tag:
         return Tag(test_id, frozenset({key}), is_exclusion=False)
 
     def with_key(self, key: str) -> 'Tag':
+        if GITHUB_CI:
+            key = f"{key}-github"
         return Tag(self.test_id, self.keys | {key}, is_exclusion=self.is_exclusion)
 
     def without_key(self, key: str) -> 'Tag | None':
@@ -1233,8 +1235,6 @@ class Tag:
             return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
 
     def is_platform_excluded(self, key: str) -> bool:
-        if GITHUB_CI:
-            return f"{key}-github" not in self.keys
         return key not in self.keys
         
     def get_keys_as_str(self) -> list[str]:
