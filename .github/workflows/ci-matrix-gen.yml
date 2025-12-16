@@ -219,15 +219,6 @@ jobs:
         run: |
           ${{ matrix.setup_steps }}
 
-      - name: Dump system details
-        run: |
-          uname -a
-          lscpu
-          free -h
-          df -h
-          pip freeze
-          env
-
       - name: Free resources on macOS
         run: |
           echo "Disabling Spotlight indexing..."
