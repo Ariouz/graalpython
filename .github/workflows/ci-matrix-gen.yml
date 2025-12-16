@@ -12,6 +12,14 @@ on:
       jobs_to_run:
         required: true
         type: string
+      logs_retention_days:
+        required: false
+        type: number
+        default: 15
+      artifacts_retention_days:
+        required: false
+        type: number
+        default: 7
 
 jobs:
   generate-tier1:
@@ -254,7 +262,7 @@ jobs:
         with:
           name: ${{ matrix.provide_artifact[0] }}
           path: main/${{ matrix.provide_artifact[0] }}.tar
-          retention-days: 1
+          retention-days: ${{ inputs.artifacts_retention_days || 7 }}
 
       - name: Upload logs
         if: ${{ matrix.logs }}
@@ -263,7 +271,7 @@ jobs:
           name: ${{ format('{0}_logs', matrix.name) }}
           path: |
             ${{ matrix.logs }}
-          retention-days: 15
+          retention-days: ${{ inputs.logs_retention_days || 15 }}
 
   tier2:
     if: ${{ success() || inputs.jobs_to_run }}
