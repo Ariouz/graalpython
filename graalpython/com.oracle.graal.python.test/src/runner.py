@@ -86,7 +86,12 @@ DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Comp
 
 GITHUB_CI = os.environ.get("GITHUB_CI", None)
 if GITHUB_CI:
+    print("[DEBUG] Detected GitHub CI environment")
     PLATFORM_KEYS.add("github")
+    CURRENT_PLATFORM += "-github"
+
+print(f"[DEBUG] Current platform: {CURRENT_PLATFORM}")
+print(f"[DEBUG] Platform keys: {PLATFORM_KEYS}")
 
 # We leave the JIT enabled for the tests themselves, but disable it for subprocesses
 # noinspection PyUnresolvedReferences
@@ -909,7 +914,14 @@ class SubprocessWorker:
 
 
 def platform_keys_match(items: typing.Iterable[str]):
-    return any(all(key in PLATFORM_KEYS for key in item.split('-')) for item in items)
+    matches = []
+    for item in items:
+        if GITHUB_CI:
+            if not "github" in item.split('-'):
+                matches.append(False)
+                continue
+        matches.append(all(key in PLATFORM_KEYS for key in item.split('-')))
+    return any(matches)
 
 
 @dataclass
@@ -1218,13 +1230,9 @@ class Tag:
         return Tag(test_id, frozenset({key}), is_exclusion=False)
 
     def with_key(self, key: str) -> 'Tag':
-        if GITHUB_CI:
-            key = f"{key}-github"
         return Tag(self.test_id, self.keys | {key}, is_exclusion=self.is_exclusion)
 
     def without_key(self, key: str) -> 'Tag | None':
-        if GITHUB_CI:
-            return self.without_keys({f"{key}-github"})
         return self.without_keys({key})
 
     def without_keys(self, keys: set[str]) -> 'Tag | None':
@@ -1237,19 +1245,13 @@ class Tag:
     def is_platform_excluded(self, key: str) -> bool:
         return key not in self.keys
         
-    def get_keys_as_str(self) -> list[str]:
-        keys = []
-        for key in sorted(self.keys):
-            keys.append(key)
-        return keys
-    
     def __str__(self):
         s = ''
         if self.is_exclusion:
             s += '!'
         s += self.test_id.test_name
         if self.keys:
-            s += f' @ {",".join(self.get_keys_as_str())}'
+            s += f' @ {",".join(sorted(self.keys))}'
         if self.comment:
             s = f'{self.comment}{s}'
         return s
@@ -1278,10 +1280,9 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                     is_exclusion = True
                     test = test.removeprefix('!')
 
+
                 if not keys and not is_exclusion:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
-
-                print("[DEBUG] Reading tag:", test, keys)
 
                 tag = Tag(
                     TestId(test_path, test),
