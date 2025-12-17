@@ -268,12 +268,12 @@ jobs:
         if: ${{ matrix.logs }}
         uses: actions/upload-artifact@v5
         continue-on-error: true
-        if-no-files-found: ignore
         with:
           name: ${{ format('{0}_logs', matrix.name) }}
           path: |
             ${{ matrix.logs }}
           retention-days: ${{ inputs.logs_retention_days || 15 }}
+          if-no-files-found: ignore
 
   tier2:
     if: ${{ success() || inputs.jobs_to_run }}
