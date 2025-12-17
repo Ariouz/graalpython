@@ -27,6 +27,8 @@ jobs:
     name: Run retagger on ${{ matrix.target }}
     with:
       jobs_to_run: ${{ github.event.inputs.jobs_to_run || format('^python-unittest-retagger.*{0}.*', matrix.target) }}
+      logs_retention_days: 7
+      artifacts_retention_days: 0
 
   merge_all_reports:
     runs-on: ubuntu-latest
