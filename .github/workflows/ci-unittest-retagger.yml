@@ -15,6 +15,7 @@ jobs:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?=.*python-svm-build).*$
+      artifacts_retention_days: 0
 
   run-retagger:
     if: success()
