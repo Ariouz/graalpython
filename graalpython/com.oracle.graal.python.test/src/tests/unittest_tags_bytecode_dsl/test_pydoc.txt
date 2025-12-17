@@ -34,13 +34,13 @@ test.test_pydoc.test_pydoc.PydocDocTest.test_synopsis_sourceless_empty_doc @ lin
 test.test_pydoc.test_pydoc.PydocDocTest.test_text_enum_member_with_value_zero @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocFodderTest.test_html_doc_inherited_routines_in_class @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocFodderTest.test_html_doc_routines_in_class @ linux-x86_64
-test.test_pydoc.test_pydoc.PydocImportTest.test_apropos_empty_doc @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_pydoc.test_pydoc.PydocImportTest.test_apropos_empty_doc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_pydoc.test_pydoc.PydocImportTest.test_apropos_with_bad_package @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocImportTest.test_apropos_with_unreadable_dir @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocImportTest.test_badimport @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocImportTest.test_importfile @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocImportTest.test_url_search_package_error @ linux-x86_64
-test.test_pydoc.test_pydoc.PydocServerTest.test_server @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_pydoc.test_pydoc.PydocServerTest.test_server @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_pydoc.test_pydoc.PydocUrlHandlerTest.test_content_type_err @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocUrlHandlerTest.test_url_requests @ linux-x86_64
 test.test_pydoc.test_pydoc.PydocWithMetaClasses.test_buggy_dir @ linux-x86_64
