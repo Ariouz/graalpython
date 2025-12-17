@@ -86,12 +86,8 @@ DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Comp
 
 GITHUB_CI = os.environ.get("GITHUB_CI", None)
 if GITHUB_CI:
-    print("[DEBUG] Detected GitHub CI environment")
     PLATFORM_KEYS.add("github")
     CURRENT_PLATFORM += "-github"
-
-print(f"[DEBUG] Current platform: {CURRENT_PLATFORM}")
-print(f"[DEBUG] Platform keys: {PLATFORM_KEYS}")
 
 # We leave the JIT enabled for the tests themselves, but disable it for subprocesses
 # noinspection PyUnresolvedReferences
