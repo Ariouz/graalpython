@@ -19,6 +19,7 @@ jobs:
 
   run-retagger:
     if: success()
+    continues-on-error: true
     needs: build-standalone-artifacts
     strategy:
       fail-fast: false
