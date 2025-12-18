@@ -803,7 +803,7 @@ test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_create_sub
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_devnull_error @ linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_devnull_input @ linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_devnull_output @ linux-x86_64
-test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_devstdin_input @ linux-aarch64,linux-aarch64-github,linux-x86_64
+test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_devstdin_input @ linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_empty_input @ linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_kill @ linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_kill_issue43884 @ linux-x86_64

@@ -978,4 +978,4 @@ test.test_unittest.testmock.testwith.WithTest.test_with_statement_nested @ linux
 test.test_unittest.testmock.testwith.WithTest.test_with_statement_same_attribute @ linux-x86_64
 test.test_unittest.testmock.testwith.WithTest.test_with_statement_specified @ linux-x86_64
 # Weakref
-!unittest.test.test_assertions.Test_Assertions.test_assertRaises_frames_survival @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+!unittest.test.test_assertions.Test_Assertions.test_assertRaises_frames_survival @ darwin-arm64,linux-aarch64,linux-x86_64

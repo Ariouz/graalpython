@@ -1,5 +1,5 @@
 # Counting file descriptors, can randomly change due to finalizers
-!test.test_zipfile.TestsWithMultipleOpens.test_many_opens @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+!test.test_zipfile.TestsWithMultipleOpens.test_many_opens @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_zipfile._path.test_path.TestPath.test_backslash_not_separator @ linux-x86_64
 test.test_zipfile._path.test_path.TestPath.test_dir_parent @ linux-x86_64
 test.test_zipfile._path.test_path.TestPath.test_eq_hash @ linux-x86_64
@@ -141,7 +141,7 @@ test.test_zipfile.test_core.ExtractTests.test_extract_all_with_target @ linux-x8
 test.test_zipfile.test_core.ExtractTests.test_extract_all_with_target_pathlike @ linux-x86_64
 test.test_zipfile.test_core.ExtractTests.test_extract_hackers_arcnames_common_cases @ linux-x86_64
 test.test_zipfile.test_core.ExtractTests.test_extract_hackers_arcnames_posix_only @ linux-x86_64
-test.test_zipfile.test_core.ExtractTests.test_extract_hackers_arcnames_windows_only @ win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.ExtractTests.test_extract_hackers_arcnames_windows_only @ win32-AMD64
 test.test_zipfile.test_core.ExtractTests.test_extract_with_target @ linux-x86_64
 test.test_zipfile.test_core.ExtractTests.test_extract_with_target_pathlike @ linux-x86_64
 test.test_zipfile.test_core.ExtractTests.test_sanitize_windows_name @ linux-x86_64

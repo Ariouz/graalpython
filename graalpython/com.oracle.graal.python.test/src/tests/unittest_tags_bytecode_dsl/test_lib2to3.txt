@@ -1,5 +1,5 @@
 # Transient hash mismatch
-!lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+!lib2to3.tests.test_parser.TestPgen2Caching.test_load_grammar_from_subprocess @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_lib2to3.test_all_fixers.Test_all.test_all_project_files @ linux-x86_64
 test.test_lib2to3.test_fixers.Test_apply.test_1 @ linux-x86_64
 test.test_lib2to3.test_fixers.Test_apply.test_2 @ linux-x86_64
