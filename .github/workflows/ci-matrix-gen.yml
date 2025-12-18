@@ -157,6 +157,7 @@ jobs:
         if: ${{ matrix.mx_version }}
         shell: bash
         run: |
+          git config --global http.timeout 600
           git clone https://github.com/graalvm/mx
           if [[ "${RUNNER_OS}" == "Windows" ]]; then
             ./mx/mx.cmd fetch-jdk -A --jdk-id labsjdk-ce-latest
