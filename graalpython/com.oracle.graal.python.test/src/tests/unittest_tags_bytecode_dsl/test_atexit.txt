@@ -1,1 +1,1 @@
-test.test_atexit.FunctionalTest.test_shutdown @ linux-x86_64,linux-x86_64-github
+test.test_atexit.FunctionalTest.test_shutdown @ linux-x86_64

@@ -1142,7 +1142,6 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
         tagged_ids = None
         if use_tags and config.tags_dir:
             tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys)]
-            print(f"[DEBUG] Tagged {len(tagged_ids)} IDs for {test_file}")
             if not tagged_ids:
                 return None
         test_module = test_path_to_module(test_file)

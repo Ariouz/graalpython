@@ -1,1 +1,1 @@
-test.test_stringprep.StringprepTests.test @ linux-x86_64,linux-x86_64-github
+test.test_stringprep.StringprepTests.test @ linux-x86_64
