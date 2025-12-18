@@ -19,7 +19,6 @@ jobs:
 
   run-retagger:
     if: success()
-    continue-on-error: true
     needs: build-standalone-artifacts
     strategy:
       fail-fast: false
@@ -34,6 +33,7 @@ jobs:
 
   merge_all_reports:
     runs-on: ubuntu-latest
+    if: always()
     needs: run-retagger
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
