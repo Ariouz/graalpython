@@ -47,25 +47,13 @@ body:
     attributes:
       value: "## Java embedding (optional)"
 
-  - type: dropdown
-    id: embedded
-    attributes:
-      label: Is GraalPy embedded in Java?
-      options:
-        - No
-        - Yes
-    validations:
-      required: true
-
   - type: input
     id: jdk_version
-    if: "embedded == 'Yes'"
     attributes:
       label: JDK version
 
   - type: textarea
     id: context_config
-    if: "embedded == 'Yes'"
     attributes:
       label: Context configuration
       description: How the Context is configured (share a code snippet if possible)
