@@ -2,71 +2,99 @@ name: Bug Report
 description: Create an issue to report a bug.
 title: "[Bug]: "
 labels: ["bug"]
-type: bug
 body:
   - type: textarea
+    id: bug
     attributes:
       label: Describe the bug
       description: A clear and concise description of what the bug is.
     validations:
       required: true
+
   - type: markdown
     attributes:
-      value: "**Environment**"
+      value: "## Environment"
+
   - type: dropdown
+    id: os
     attributes:
-      description: Operating system
+      label: Operating system
       options:
         - Linux
         - Windows
         - macOS
     validations:
       required: true
+
   - type: dropdown
+    id: arch
     attributes:
-      description: CPU architecture
+      label: CPU architecture
       options:
         - x86_64
         - ARM64
     validations:
       required: true
+
   - type: input
+    id: graalpy_version
     attributes:
-      description: GraalPy version
+      label: GraalPy version
     validations:
       required: true
-  - type: checkboxes
-    id: graalpy-embedded
+
+  - type: markdown
     attributes:
-      label: Is GraalPy embedded in Java ?
+      value: "## Java embedding (optional)"
+
+  - type: dropdown
+    id: embedded
+    attributes:
+      label: Is GraalPy embedded in Java?
       options:
+        - No
         - Yes
+    validations:
+      required: true
+
   - type: input
-    if: "graalpy-embedded == 'Yes'"
+    id: jdk_version
+    if: "embedded == 'Yes'"
     attributes:
-      description: JDK version
+      label: JDK version
+
   - type: textarea
-    if: "graalpy-embedded == 'Yes'"
+    id: context_config
+    if: "embedded == 'Yes'"
     attributes:
-      description: How the `Context` object is configured (if possible, share code snippet)
+      label: Context configuration
+      description: How the Context is configured (share a code snippet if possible)
+
   - type: textarea
+    id: steps
     attributes:
-      label: "Steps to reproduce"
+      label: Steps to reproduce
       description: Steps to reproduce the behavior.
     validations:
       required: true
+
   - type: textarea
+    id: expected
     attributes:
-      label: "Expected behavior"
+      label: Expected behavior
       description: A clear and concise description of what you expected to happen.
     validations:
       required: true
+
   - type: textarea
+    id: stack
     attributes:
-      label: "Stack Trace"
+      label: Stack trace
       description: If applicable, please share the stack trace.
       render: shell
+
   - type: textarea
+    id: extra
     attributes:
-      label: "Additional context"
-      description: "Add any other context about the problem here."
+      label: Additional context
+      description: Add any other context about the problem here.
