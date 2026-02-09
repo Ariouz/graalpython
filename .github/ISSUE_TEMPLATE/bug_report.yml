@@ -1,0 +1,72 @@
+name: Bug Report
+description: Create an issue to report a bug.
+title: "[Bug]: "
+labels: ["bug"]
+type: bug
+body:
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "**Environment**"
+  - type: dropdown
+    attributes:
+      description: Operating system
+      options:
+        - Linux
+        - Windows
+        - macOS
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      description: CPU architecture
+      options:
+        - x86_64
+        - ARM64
+    validations:
+      required: true
+  - type: input
+    attributes:
+      description: GraalPy version
+    validations:
+      required: true
+  - type: checkboxes
+    id: graalpy-embedded
+    attributes:
+      label: Is GraalPy embedded in Java ?
+      options:
+        - Yes
+  - type: input
+    if: "graalpy-embedded == 'Yes'"
+    attributes:
+      description: JDK version
+  - type: textarea
+    if: "graalpy-embedded == 'Yes'"
+    attributes:
+      description: How the `Context` object is configured (if possible, share code snippet)
+  - type: textarea
+    attributes:
+      label: "Steps to reproduce"
+      description: Steps to reproduce the behavior.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "Expected behavior"
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "Stack Trace"
+      description: If applicable, please share the stack trace.
+      render: shell
+  - type: textarea
+    attributes:
+      label: "Additional context"
+      description: "Add any other context about the problem here."
