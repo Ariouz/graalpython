@@ -10,10 +10,8 @@ If no issue references your problem, please file one using the [Bug Report issue
 
 If you think you've found a security vulnerability, do not raise a GitHub issue and follow the instructions in our [security policy](https://github.com/Ariouz/graalpython/blob/master/SECURITY.md).
 
-<details>
-<summary>Example</summary>
-![Issue form](/docs/contributor/assets/issue_form_selector.png)
-</details>
+#### Example:
+![Issue Form](/docs/contributor/assets/issue_form_selector.png)
 
 ## 2. Apply changes
 ### Locally:
