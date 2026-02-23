@@ -1,6 +1,6 @@
 # Contributing to GraalPy: Getting started
 Make sure to read [Contributing to GraalPy](https://github.com/oracle/graalpython/blob/master/docs/contributor/CONTRIBUTING.md) to set up your environment.
-This document will demonstrates the different steps to contribute to the project by fixing the following error: `cannot import name '_excepthook' from '_thread'`.
+This document will demonstrate the different steps to contribute to the project by fixing the following error: `cannot import name '_excepthook' from '_thread'`.
 
 
 ## 1. File an issue
