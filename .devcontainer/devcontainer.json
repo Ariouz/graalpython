@@ -5,7 +5,6 @@
         "vscodeinit": "sudo chmod a+rwx ../ && mx -y sforceimports && mx -y vscodeinit && ln -sf $PWD/../graalpython.code-workspace graalpython.code-workspace && mx -y build --target GRAALPY_JVM_STANDALONE"
     },
     "hostRequirements": {
-        "memory": "16gb",
         "storage": "64gb"
     },
     "customizations": {
