@@ -280,7 +280,7 @@ jobs:
           if-no-files-found: ignore
       
       - name: Upload test reports
-        if: ${{ matrix.test_reports }}
+        if: ${{ inputs.export_test_reports }}
         uses: actions/upload-artifact@v5
         continue-on-error: true
         with:
