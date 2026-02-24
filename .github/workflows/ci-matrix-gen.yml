@@ -20,6 +20,10 @@ on:
         required: false
         type: number
         default: 7
+      export_test_reports:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   generate-tier1:
