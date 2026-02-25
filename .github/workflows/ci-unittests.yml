@@ -12,7 +12,6 @@ jobs:
       jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
       logs_retention_days: 0
       artifacts_retention_days: 0
-      export_test_reports: true
 
   run-tests:
     if: success()
@@ -20,6 +19,7 @@ jobs:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
+      export_test_reports: true
 
   collect-reports:
     needs: run-tests
