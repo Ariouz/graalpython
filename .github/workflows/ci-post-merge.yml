@@ -38,11 +38,17 @@ jobs:
             let runsResp = null;
             while (Date.now() - startMs < maxWaitMs) {
               console.log(`Checking workflow runs for SHA ${sha}...`);
-              runsResp = await github.rest.actions.listWorkflowRunsForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                head_sha: sha,
-              });
+              try {
+                runsResp = await github.rest.actions.listWorkflowRunsForRepo({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head_sha: sha,
+                });
+              } catch (err) {
+                console.log(`warning: failed to fetch workflow runs: ${err}`);
+                await new Promise(r => setTimeout(r, intervalMs));
+                continue;
+              }
 
               const hasCompleted = runsResp.data.workflow_runs.some(run => run.head_sha === sha && run.status === "completed");
               if (hasCompleted) break;
