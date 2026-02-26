@@ -80,7 +80,7 @@ jobs:
             const assignee = '${{ steps.wait-for-ci.outputs.assignee }}';
             const runUrl = '${{ steps.wait-for-ci.outputs.failed_run_url }}';
 
-            let body = `@${assignee} - CI jobs failed - ${runUrl}`;
+            let body = `@${assignee} - CI workflow failed: [View workflow](${runUrl})`;
             try {
               const reportPath = 'report/merged_test_reports.json';
               if (fs.existsSync(reportPath)) {
@@ -88,7 +88,7 @@ jobs:
                 const failed = data.map(t => t.name);
                 if (failed.length) {
                   const list = failed.map(n => `- ${n}`).join('\n');
-                  body = `@${assignee} - CI jobs failed. Failed tests:\n\n${list}`;
+                  body = `@${assignee} - CI workflow failed: [View workflow](${runUrl})\nFailed tests:\n\n${list}`;
                 }
               }
             } catch (e) { // noop }
