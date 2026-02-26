@@ -13,12 +13,21 @@ jobs:
           script: |
             const GRAALVMBOT_LOGIN = "Ariouz";
             const pr = context.payload.pull_request;
-            if (!pr || !pr.number || pr.state !== "closed") return;
+            if (!pr || !pr.number || pr.state !== "closed") {
+              console.log("Not a closed pull request event.");
+              return;
+            }
 
             const sender = context.payload.sender;
             const assignees = pr.assignees || [];
-            if (!sender || sender.login !== GRAALVMBOT_LOGIN) return;
-            if (assignees.length !== 1) return;
+            if (!sender || sender.login !== GRAALVMBOT_LOGIN) {
+              console.log(`PR closed by ${sender ? sender.login : 'unknown'}, not ${GRAALVMBOT_LOGIN}. Skipping CI check.`);
+              return;
+            }
+            if (assignees.length !== 1) {
+              console.log(`Expected exactly 1 assignee, found ${assignees.length}. Skipping CI check.`);
+              return;
+            }
 
             const sha = pr.head.sha;
 
@@ -28,6 +37,7 @@ jobs:
             const startMs = Date.now();
             let runsResp = null;
             while (Date.now() - startMs < maxWaitMs) {
+              console.log(`Checking workflow runs for SHA ${sha}...`);
               runsResp = await github.rest.actions.listWorkflowRunsForRepo({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -64,12 +74,13 @@ jobs:
 
             core.setOutput('assignee', assignees[0] ? assignees[0].login : '');
             core.setOutput('failed_run_url', failedRun.html_url);
+            console.log(`Found failed CI workflow: ${failedRun.html_url}`);
       - name: Download merged test report
         uses: actions/download-artifact@v5
         with:
           name: merged_test_reports
           path: report
-          if-no-files-found: ignore
+        continue-on-error: true
       - name: Post failure comment
         if: ${{ steps.wait-for-ci.outputs.failed_run_url != '' }}
         uses: actions/github-script@v8
