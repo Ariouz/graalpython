@@ -7,7 +7,7 @@ jobs:
   check-ci-and-notify:
     runs-on: ubuntu-latest
     steps:
-      - id: wait-for-ci
+      - name: Wait for CI
         uses: actions/github-script@v8
         with:
           script: |
@@ -74,12 +74,15 @@ jobs:
 
             core.setOutput('assignee', assignees[0] ? assignees[0].login : '');
             core.setOutput('failed_run_url', failedRun.html_url);
+            core.setOutput('failed_run_id', failedRun.id);
             console.log(`Found failed CI workflow: ${failedRun.html_url}`);
       - name: Download merged test report
         uses: actions/download-artifact@v5
         with:
           name: merged_test_reports
           path: report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.wait-for-ci.outputs.failed_run_id }}
         continue-on-error: true
       - name: Post failure comment
         if: ${{ steps.wait-for-ci.outputs.failed_run_url != '' }}
