@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for CI
+        id: wait-for-ci
         uses: actions/github-script@v8
         with:
           script: |
