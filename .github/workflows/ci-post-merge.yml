@@ -121,7 +121,9 @@ jobs:
                   body = `@${assignee} - CI workflow failed: [View workflow](${runUrl})\nFailed tests:\n\n${list}`;
                 }
               }
-            } catch (e) { // noop }
+            } catch (e) {
+              console.log(`Error parsing test report: ${e}`);
+            }
 
             const pr = context.payload.pull_request;
             await github.rest.issues.createComment({
