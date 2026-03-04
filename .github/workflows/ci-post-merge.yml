@@ -33,8 +33,8 @@ jobs:
             const sha = pr.head.sha;
 
             // Wait for CI workflow to complete
-            const maxWaitMs = 2 * 60 * 60 * 1000;
-            const intervalMs = 10 * 60 * 1000;
+            const maxWaitMs = 4* 60 * 60 * 1000;
+            const intervalMs = 15 * 60 * 1000;
             const startMs = Date.now();
             let runsResp = null;
             while (Date.now() - startMs < maxWaitMs) {
