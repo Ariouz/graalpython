@@ -22,7 +22,7 @@ jobs:
             const sender = context.payload.sender;
             const assignees = pr.assignees || [];
             if (!sender || sender.login !== GRAALVMBOT_LOGIN) {
-              console.log(`PR closed by ${sender ? sender.login : 'unknown'}, not ${GRAALVMBOT_LOGIN}. Skipping CI check.`);
+              console.log(`PR closed by ${sender.login}, not ${GRAALVMBOT_LOGIN}. Skipping CI check.`);
               return;
             }
             if (assignees.length !== 1) {
@@ -38,7 +38,7 @@ jobs:
             const startMs = Date.now();
             let runsResp = null;
             while (Date.now() - startMs < maxWaitMs) {
-              console.log(`Checking workflow runs for SHA ${sha}...`);
+              console.log(`Waiting for workflow with SHA ${sha} to complete...`);
               try {
                 runsResp = await github.rest.actions.listWorkflowRunsForRepo({
                   owner: context.repo.owner,
@@ -83,16 +83,8 @@ jobs:
             core.setOutput('failed_run_url', failedRun.html_url);
             core.setOutput('failed_run_id', failedRun.id);
             console.log(`Found failed CI workflow: ${failedRun.html_url}`);
-      - name: Debug failed_run_id and list artifacts
-        run: |
-          echo "failed_run_id=${{ steps.wait-for-ci.outputs.failed_run_id }}"
-          if [ -n "${{ steps.wait-for-ci.outputs.failed_run_id }}" ]; then
-            echo "listing artifacts for run ${{ steps.wait-for-ci.outputs.failed_run_id }}"
-            curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ steps.wait-for-ci.outputs.failed_run_id }}/artifacts" \
-                | jq .
-          fi
       - name: Download merged test report
+        if: ${{ steps.wait-for-ci.outputs.failed_run_url != '' }}
         uses: actions/download-artifact@v5
         with:
           name: merged_test_reports
