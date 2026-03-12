@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -109,13 +109,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class ThreadModuleBuiltins extends PythonBuiltins {
 
     public static final StructSequence.BuiltinTypeDescriptor EXCEPTHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
-            PythonBuiltinClassType.PExceptHookArgs,
-            4,
-            new String[]{
-                    "exc_type", "exc_value", "exc_traceback", "thread"},
-            new String[]{
-                    "Exception type", "Exception value", "Exception traceback",
-                    "Exception thread"});
+                    PythonBuiltinClassType.PExceptHookArgs,
+                    4,
+                    new String[]{
+                                    "exc_type", "exc_value", "exc_traceback", "thread"},
+                    new String[]{
+                                    "Exception type", "Exception value", "Exception traceback",
+                                    "Exception thread"});
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -200,22 +200,23 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getExceptHook(PythonModule self,
-                             Object exceptHookArgs,
-                             @Cached PRaiseNode raiseNode) {
+                        Object exceptHookArgs,
+                        @Cached PRaiseNode raiseNode) {
 
             Object argsType = GetClassNode.GetPythonObjectClassNode.executeUncached((PythonObject) exceptHookArgs);
-            if (!TypeNodes.IsSameTypeNode.executeUncached(argsType, PythonBuiltinClassType.PExceptHookArgs))
+            if (!TypeNodes.IsSameTypeNode.executeUncached(argsType, PythonBuiltinClassType.PExceptHookArgs)) {
                 throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_TYPE_MUST_BE, "_thread.excepthook", "ExceptHookArgs");
-
+            }
             SequenceStorage seq = ((PTuple) exceptHookArgs).getSequenceStorage();
-            if (seq.length() != 4)
+            if (seq.length() != 4) {
                 throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, 4, seq.length());
+            }
 
             Object excType = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 0);
 
-            if (TypeNodes.IsSameTypeNode.executeUncached(excType, PythonBuiltinClassType.SystemExit))
+            if (TypeNodes.IsSameTypeNode.executeUncached(excType, PythonBuiltinClassType.SystemExit)) {
                 return PNone.NONE;
-
+            }
             Object excValue = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 1);
             Object excTraceback = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 2);
             Object thread = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 3);
@@ -238,9 +239,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             pw.printf("Exception in thread %s:\n", name);
 
             PException pException;
-            if (excValue instanceof PException)
+            if (excValue instanceof PException) {
                 pException = (PException) excValue;
-            else if (excValue instanceof PBaseException base) {
+            } else if (excValue instanceof PBaseException base) {
                 pException = PException.fromObject(base, base.getException().getLocation(), false);
                 pException.materializeMessage();
             } else {
