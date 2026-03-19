@@ -43,10 +43,12 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
@@ -69,7 +71,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
@@ -87,7 +91,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -198,10 +201,13 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetThreadExceptHookNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object getExceptHook(PythonModule self,
+        Object getExceptHook(@SuppressWarnings("unused") PythonModule self,
                         Object exceptHookArgs,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectStrAsTruffleStringNode strNode) {
 
             Object argsType = GetClassNode.GetPythonObjectClassNode.executeUncached((PythonObject) exceptHookArgs);
             if (!TypeNodes.IsSameTypeNode.executeUncached(argsType, PythonBuiltinClassType.PExceptHookArgs)) {
@@ -221,35 +227,36 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             Object excTraceback = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 2);
             Object thread = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 3);
 
-            CallNode callNode = CallNode.create();
-            Object name = null;
+            TruffleString name;
 
-            Object nameAttr = PyObjectLookupAttr.executeUncached(thread, tsLiteral("_name"));
+            Object nameAttr = lookupAttr.execute(null, inliningTarget, thread, tsLiteral("_name"));
             if (nameAttr != null && nameAttr != PNone.NONE && nameAttr != PNone.NO_VALUE) {
-                name = nameAttr.toString();
-            }
-
-            if (name == null) {
-                Object getIdentBuiltin = PyObjectLookupAttr.executeUncached(thread, tsLiteral("get_ident"));
-                Object ident = callNode.executeWithoutFrame(getIdentBuiltin);
-                name = ident != null ? ident.toString() : "<unknown>";
-            }
-
-            PrintWriter pw = new PrintWriter(getContext().getEnv().err(), true);
-            pw.printf("Exception in thread %s:\n", name);
-
-            PException pException;
-            if (excValue instanceof PException) {
-                pException = (PException) excValue;
-            } else if (excValue instanceof PBaseException base) {
-                pException = PException.fromObject(base, base.getException().getLocation(), false);
-                pException.materializeMessage();
+                name = strNode.execute(null, inliningTarget, nameAttr);
             } else {
-                pw.println(excTraceback.toString());
-                return PNone.NONE;
+                Object getIdentBuiltin = lookupAttr.execute(null, inliningTarget, thread, tsLiteral("get_ident"));
+                Object ident = callNode.executeWithoutFrame(getIdentBuiltin);
+                name = ident != null ? strNode.execute(null, inliningTarget, ident) : tsLiteral("<unknown>");
             }
 
-            ExceptionUtils.printPythonLikeStackTrace(getContext(), pException);
+            Object sysMod = getContext().getSysModule();
+            Object stdErr = lookupAttr.execute(null, inliningTarget, sysMod, T_STDERR);
+
+            Object write = lookupAttr.execute(null, inliningTarget, stdErr, tsLiteral("write"));
+            Object flush = lookupAttr.execute(null, inliningTarget, stdErr, tsLiteral("flush"));
+
+            callNode.executeWithoutFrame(write, tsLiteral("Exception in thread "));
+            callNode.executeWithoutFrame(write, name);
+            callNode.executeWithoutFrame(write, tsLiteral(":\n"));
+            callNode.executeWithoutFrame(flush);
+
+            Object sysExcepthook = lookupAttr.execute(null, inliningTarget, sysMod, T___EXCEPTHOOK__);
+            if (sysExcepthook != PNone.NO_VALUE && sysExcepthook != PNone.NONE) {
+                callNode.executeWithoutFrame(sysExcepthook, excType, excValue, excTraceback);
+                callNode.executeWithoutFrame(flush);
+            } else if (excValue instanceof PBaseException) {
+                callNode.executeWithoutFrame(write, strNode.execute(null, inliningTarget, excValue));
+                callNode.executeWithoutFrame(flush);
+            }
             return PNone.NONE;
         }
     }
