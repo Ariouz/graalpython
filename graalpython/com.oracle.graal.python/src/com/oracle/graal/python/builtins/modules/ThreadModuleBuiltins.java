@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -71,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
