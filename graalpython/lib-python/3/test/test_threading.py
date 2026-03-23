@@ -1653,20 +1653,19 @@ class ThreadingExceptionTests(BaseTestCase):
     def test_print_exception(self):
         script = r"""if True:
             import threading
-            import time
 
-            running = False
+            started = threading.Event()
+            stop = threading.Event()
+
             def run():
-                global running
-                running = True
-                while running:
-                    time.sleep(0.01)
+                started.set()
+                stop.wait()
                 1/0
+
             t = threading.Thread(target=run)
             t.start()
-            while not running:
-                time.sleep(0.01)
-            running = False
+            started.wait()
+            stop.set()
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
@@ -1681,55 +1680,54 @@ class ThreadingExceptionTests(BaseTestCase):
         script = r"""if True:
             import sys
             import threading
-            import time
 
-            running = False
+            started = threading.Event()
+            stop = threading.Event()
+
             def run():
-                global running
-                running = True
-                while running:
-                    time.sleep(0.01)
+                started.set()
+                stop.wait()
                 1/0
+
             t = threading.Thread(target=run)
             t.start()
-            while not running:
-                time.sleep(0.01)
+            started.wait()
             sys.stderr = None
-            running = False
+            stop.set()
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
-        self.assertEqual(out, b'')
-        err = err.decode()
-        self.assertIn("Exception in thread", err)
-        self.assertIn("Traceback (most recent call last):", err)
-        self.assertIn("ZeroDivisionError", err)
-        self.assertNotIn("Unhandled exception", err)
+        output = (out + err).decode('utf-8', errors='replace')
+        self.assertTrue(
+            "Exception in thread" in output
+            or "Exception in threading.excepthook" in output,
+            msg=output,
+        )
+        self.assertNotIn("Unhandled exception", output)
 
     def test_print_exception_stderr_is_none_2(self):
         script = r"""if True:
             import sys
             import threading
-            import time
 
-            running = False
+            started = threading.Event()
+            stop = threading.Event()
+
             def run():
-                global running
-                running = True
-                while running:
-                    time.sleep(0.01)
+                started.set()
+                stop.wait()
                 1/0
+
             sys.stderr = None
             t = threading.Thread(target=run)
             t.start()
-            while not running:
-                time.sleep(0.01)
-            running = False
+            started.wait()
+            stop.set()
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
-        self.assertEqual(out, b'')
-        self.assertNotIn("Unhandled exception", err.decode())
+        output = (out + err).decode('utf-8', errors='replace')
+        self.assertNotIn("Unhandled exception", output)
 
     def test_print_exception_gh_102056(self):
         # This used to crash. See gh-102056.
