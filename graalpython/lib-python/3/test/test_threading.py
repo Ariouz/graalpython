@@ -1811,13 +1811,26 @@ class ExceptHookTests(BaseTestCase):
         super().setUp()
 
     def test_excepthook(self):
-        with support.captured_output("stderr") as stderr:
+        script = textwrap.dedent("""if True:
+            import threading
+
+            class ThreadRunFail(threading.Thread):
+                def run(self):
+                    raise ValueError("run failed")
+
             thread = ThreadRunFail(name="excepthook thread")
             thread.start()
             thread.join()
+            """)
+        with os_helper.temp_dir() as tmpdir:
+            filename = os.path.join(tmpdir, "test_excepthook_script.py")
+            with open(filename, "w", encoding="utf-8") as script_file:
+                script_file.write(script)
+            _, out, err = assert_python_ok(filename)
+        self.assertEqual(out, b'')
 
-        stderr = stderr.getvalue().strip()
-        self.assertIn(f'Exception in thread {thread.name}:\n', stderr)
+        stderr = err.decode().strip()
+        self.assertIn('Exception in thread excepthook thread:\n', stderr)
         self.assertIn('Traceback (most recent call last):\n', stderr)
         self.assertIn('  raise ValueError("run failed")', stderr)
         self.assertIn('ValueError: run failed', stderr)
