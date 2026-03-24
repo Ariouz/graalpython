@@ -1697,13 +1697,11 @@ class ThreadingExceptionTests(BaseTestCase):
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
-        output = (out + err).decode('utf-8', errors='replace')
-        self.assertTrue(
-            "Exception in thread" in output
-            or "Exception in threading.excepthook" in output,
-            msg=output,
-        )
-        self.assertNotIn("Unhandled exception", output)
+        err = err.decode()
+        self.assertIn("Exception in thread", err)
+        self.assertIn("Traceback (most recent call last):", err)
+        self.assertIn("ZeroDivisionError", err)
+        self.assertNotIn("Unhandled exception", err)
 
     def test_print_exception_stderr_is_none_2(self):
         script = r"""if True:
@@ -1726,8 +1724,8 @@ class ThreadingExceptionTests(BaseTestCase):
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
-        output = (out + err).decode('utf-8', errors='replace')
-        self.assertNotIn("Unhandled exception", output)
+        self.assertEqual(out, b'')
+        self.assertNotIn("Unhandled exception", err.decode())
 
     def test_print_exception_gh_102056(self):
         # This used to crash. See gh-102056.

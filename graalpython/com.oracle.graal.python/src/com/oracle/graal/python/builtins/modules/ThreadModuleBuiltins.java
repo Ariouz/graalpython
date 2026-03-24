@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -205,6 +206,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectSetAttr setAttr,
                         @Cached PyObjectStrAsTruffleStringNode strNode) {
 
             Object argsType = GetClassNode.GetPythonObjectClassNode.executeUncached((PythonObject) exceptHookArgs);
@@ -239,6 +241,17 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             Object sysMod = getContext().getSysModule();
             Object stdErr = lookupAttr.execute(null, inliningTarget, sysMod, T_STDERR);
 
+            boolean stdErrInvalid = stdErr == null || stdErr == PNone.NONE || stdErr == PNone.NO_VALUE;
+
+            if (stdErrInvalid) {
+                if (thread != null && thread != PNone.NONE && thread != PNone.NO_VALUE) {
+                    stdErr = lookupAttr.execute(null, inliningTarget, thread, tsLiteral("_stderr"));
+                }
+                if (stdErr == null || stdErr == PNone.NONE || stdErr == PNone.NO_VALUE) {
+                    return PNone.NONE;
+                }
+            }
+
             Object write = lookupAttr.execute(null, inliningTarget, stdErr, tsLiteral("write"));
             Object flush = lookupAttr.execute(null, inliningTarget, stdErr, tsLiteral("flush"));
 
@@ -249,7 +262,17 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
 
             Object sysExcepthook = lookupAttr.execute(null, inliningTarget, sysMod, T___EXCEPTHOOK__);
             if (sysExcepthook != PNone.NO_VALUE && sysExcepthook != PNone.NONE) {
-                callNode.executeWithoutFrame(sysExcepthook, excType, excValue, excTraceback);
+                if (!stdErrInvalid) {
+                    callNode.executeWithoutFrame(sysExcepthook, excType, excValue, excTraceback);
+                } else {
+                    Object oldStdErr = lookupAttr.execute(null, inliningTarget, sysMod, T_STDERR);
+                    try {
+                        setAttr.execute(inliningTarget, sysMod, T_STDERR, stdErr);
+                        callNode.executeWithoutFrame(sysExcepthook, excType, excValue, excTraceback);
+                    } finally {
+                        setAttr.execute(inliningTarget, sysMod, T_STDERR, oldStdErr == PNone.NO_VALUE ? PNone.NONE : oldStdErr);
+                    }
+                }
                 callNode.executeWithoutFrame(flush);
             } else if (excValue instanceof PBaseException) {
                 callNode.executeWithoutFrame(write, strNode.execute(null, inliningTarget, excValue));
