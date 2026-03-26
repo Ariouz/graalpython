@@ -1653,20 +1653,19 @@ class ThreadingExceptionTests(BaseTestCase):
     def test_print_exception(self):
         script = r"""if True:
             import threading
-            import time
 
-            running = False
+            started = threading.Event()
+            stop = threading.Event()
+
             def run():
-                global running
-                running = True
-                while running:
-                    time.sleep(0.01)
+                started.set()
+                stop.wait()
                 1/0
+
             t = threading.Thread(target=run)
             t.start()
-            while not running:
-                time.sleep(0.01)
-            running = False
+            started.wait()
+            stop.set()
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
@@ -1681,25 +1680,23 @@ class ThreadingExceptionTests(BaseTestCase):
         script = r"""if True:
             import sys
             import threading
-            import time
 
-            running = False
+            started = threading.Event()
+            stop = threading.Event()
+
             def run():
-                global running
-                running = True
-                while running:
-                    time.sleep(0.01)
+                started.set()
+                stop.wait()
                 1/0
+
             t = threading.Thread(target=run)
             t.start()
-            while not running:
-                time.sleep(0.01)
+            started.wait()
             sys.stderr = None
-            running = False
+            stop.set()
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
-        self.assertEqual(out, b'')
         err = err.decode()
         self.assertIn("Exception in thread", err)
         self.assertIn("Traceback (most recent call last):", err)
@@ -1710,21 +1707,20 @@ class ThreadingExceptionTests(BaseTestCase):
         script = r"""if True:
             import sys
             import threading
-            import time
 
-            running = False
+            started = threading.Event()
+            stop = threading.Event()
+
             def run():
-                global running
-                running = True
-                while running:
-                    time.sleep(0.01)
+                started.set()
+                stop.wait()
                 1/0
+
             sys.stderr = None
             t = threading.Thread(target=run)
             t.start()
-            while not running:
-                time.sleep(0.01)
-            running = False
+            started.wait()
+            stop.set()
             t.join()
             """
         rc, out, err = assert_python_ok("-c", script)
@@ -1811,13 +1807,26 @@ class ExceptHookTests(BaseTestCase):
         super().setUp()
 
     def test_excepthook(self):
-        with support.captured_output("stderr") as stderr:
+        script = textwrap.dedent("""if True:
+            import threading
+
+            class ThreadRunFail(threading.Thread):
+                def run(self):
+                    raise ValueError("run failed")
+
             thread = ThreadRunFail(name="excepthook thread")
             thread.start()
             thread.join()
+            """)
+        with os_helper.temp_dir() as tmpdir:
+            filename = os.path.join(tmpdir, "test_excepthook_script.py")
+            with open(filename, "w", encoding="utf-8") as script_file:
+                script_file.write(script)
+            _, out, err = assert_python_ok(filename)
+        self.assertEqual(out, b'')
 
-        stderr = stderr.getvalue().strip()
-        self.assertIn(f'Exception in thread {thread.name}:\n', stderr)
+        stderr = err.decode().strip()
+        self.assertIn('Exception in thread excepthook thread:\n', stderr)
         self.assertIn('Traceback (most recent call last):\n', stderr)
         self.assertIn('  raise ValueError("run failed")', stderr)
         self.assertIn('ValueError: run failed', stderr)
