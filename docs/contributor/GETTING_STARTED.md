@@ -54,6 +54,8 @@ Keep your first change small and easy to review (one issue, one objective, one P
 Before editing, quickly identify where the code or tests live by checking the project structure in the
 [Development Layout](https://github.com/oracle/graalpython/blob/master/docs/contributor/CONTRIBUTING.md#development-layout).
 
+If you use GitHub Codespaces with GitHub Copilot Pro, you can also run an AI coding agent in an isolated environment with access to Issues, PRs, and CI context.
+
 ## 4. Run focused checks
 
 Before opening a PR, run tests affected by your changes.
