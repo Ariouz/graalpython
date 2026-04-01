@@ -512,7 +512,7 @@
                 "mx", "graalpytest", "--svm",
                 "--tagged", "--all", "--continue-on-collection-errors", ".",
                 # More workers doesn't help, the job is bottlenecked on all the timeouts in test_asyncio
-                "-n", "4",
+                "-n", "3",
                 # The default timeout is very generous to allow for infrastructure flakiness,
                 # but we don't want to auto tag tests that take a long time
                 "--timeout-factor", "0.3",
