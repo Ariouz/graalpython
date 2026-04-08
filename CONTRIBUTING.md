@@ -46,3 +46,5 @@ If you'd like more specific guidelines, see the [Contributor Covenant Code of Co
 
 [OCA]: https://oca.opensource.oracle.com
 [COC]: https://www.contributor-covenant.org/version/1/4/code-of-conduct/
+
+real skip check 2026-04-08T15:03:00Z
