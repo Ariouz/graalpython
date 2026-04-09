@@ -68,12 +68,6 @@ jobs:
               }
             }
 
-            if (pr.head?.repo?.fork) {
-              core.setOutput('run_ci', 'true');
-              core.setOutput('reason', 'fork PR');
-              return;
-            }
-
             core.setOutput('run_ci', 'false');
             core.setOutput('reason', 'non-fork PR without .github/suite.py changes');
 
@@ -112,6 +106,9 @@ jobs:
       - name: Run abi-check
         shell: bash
         run: mx abi-check
+      
+      - name: Force failure
+        run: exit 1
 
   build-standalone-artifacts:
     if: needs.should-run.outputs.run_ci == 'true' && success()
