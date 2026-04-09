@@ -1,4 +1,4 @@
-d# Contributing to GraalPy
+# Contributing to GraalPy
 
 Thanks for considering to contribute!
 To get you started, read about the structure of this implementation.
