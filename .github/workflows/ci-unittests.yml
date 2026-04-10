@@ -53,6 +53,23 @@ jobs:
               return;
             }
 
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const hasOnlyDocsChanges = changedFiles.length > 0 && changedFiles.every(file => file.filename.startsWith('docs/'));
+            if (hasOnlyDocsChanges) {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', 'docs-only changes');
+              return;
+            }
+
             if (hasWorkflowOrSuiteChanges) {
               core.setOutput('run_ci', 'true');
               core.setOutput('reason', '.github or suite.py changes');
