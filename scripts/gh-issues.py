@@ -6,12 +6,14 @@ import re
 import subprocess
 import urllib.parse
 import urllib.request
+
 from openai_codex_sdk import Codex, Thread
 from openai_codex_sdk.errors import ThreadRunError
 from termcolor import cprint
 
-repo = "oracle/graalpython"
-codex = Codex()
+REPO = "oracle/graalpython"
+WORKING_DIRECTORY = "/home/vcalvez/graalpython"
+CODEX = Codex()
 MAX_ISSUE_TEXT_CHARS = 700
 CODEX_BATCH_SIZE = 1
 CODEX_STDIO_READ_LIMIT = 1024 * 1024
@@ -99,7 +101,7 @@ def _candidate_files_for_issue(issue: dict, max_files: int = 5) -> list[str]:
         "--exclude-dir=__pycache__",
         "--binary-files=without-match",
         pattern,
-        "/home/vcalvez/graalpython",
+        WORKING_DIRECTORY,
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=2, check=False)
@@ -108,7 +110,7 @@ def _candidate_files_for_issue(issue: dict, max_files: int = 5) -> list[str]:
 
     files = []
     for line in result.stdout.splitlines():
-        rel = line.replace("/home/vcalvez/graalpython/", "")
+        rel = line.replace(f"{WORKING_DIRECTORY}/", "")
         files.append(rel)
         if len(files) >= max_files:
             break
@@ -157,10 +159,9 @@ def codex_sort_issues(
                 "sandboxMode": "read-only",
                 "webSearchEnabled": False,
                 "networkAccessEnabled": False,
+                "workingDirectory": WORKING_DIRECTORY,
             }
-            thread_options["workingDirectory"] = "/home/vcalvez/graalpython"
-
-            thread = codex.start_thread(thread_options)
+            thread = CODEX.start_thread(thread_options)
 
             codebase_instruction = (
                 "Read only the local files needed for this issue. "
@@ -181,6 +182,8 @@ def codex_sort_issues(
             )
             response, usage = await _codex_prompt_async(prompt, thread)
             _log_success(f"Processed batch {index}/{total}")
+            _log_info(f"Batch {index} response: {response.strip()[:200]}{'...' if len(response.strip()) > 200 else ''}")
+            _log_info(f"Batch {index} token usage: input={usage['input_tokens']}, cached_input={usage['cached_input_tokens']}, output={usage['output_tokens']}")
             return json.loads(_extract_json_payload(response)), usage
 
     async def _run_all() -> list[tuple[list[dict], dict[str, int]]]:
@@ -243,6 +246,20 @@ def codex_sort_issues(
         indent=2,
     )
 
+
+async def codex_fix_issue(issue_id: int) -> str:
+    thread = CODEX.start_thread({"workingDirectory": WORKING_DIRECTORY})
+    prompt = (
+        f"Attempt to fix the issue #{issue_id} in the codebase. "
+        "Read only the local files needed for this issue. "
+        "Skim only minimal relevant sections. "
+        "Make relevant tests and iterate fix."
+    )
+
+    response, _ = await _codex_prompt_async(prompt, thread)
+    return response
+
+
 def build_github_request(url: str, query_params: dict[str, str], token: str | None = None) -> urllib.request.Request:
     headers = {
         "Accept": "application/vnd.github+json",
@@ -266,9 +283,7 @@ def get_issues(limit: int = 30, label: str | None = None) -> str:
         }
         if label:
             query_params["labels"] = label
-        url = (
-            f"https://api.github.com/repos/{repo}/issues"
-        )
+        url = f"https://api.github.com/repos/{REPO}/issues"
         req = build_github_request(url, query_params, token=os.getenv("GITHUB_TOKEN"))
         with urllib.request.urlopen(req) as resp:
             raw_issues = json.loads(resp.read())
@@ -307,6 +322,10 @@ def main() -> None:
     issues_parser.add_argument("--label", type=str, help="Filter issues by label")
     issues_parser.add_argument("--codex-max-files", type=int, default=5, help="Max local files Codex should read per issue")
     issues_parser.add_argument("--short-output", action="store_true", help="Output only issue IDs in each category")
+    issues_parser.add_argument("--json-output", action="store_true", help="Output only JSON result")
+
+    fix_parser = subparsers.add_parser("fix-issue", help="Attempt to fix an issue with Codex")
+    fix_parser.add_argument("--issue-id", type=int, required=True, help="ID of the issue to fix")
 
     args = parser.parse_args()
 
@@ -320,7 +339,25 @@ def main() -> None:
             max_files_to_read=max(0, args.codex_max_files),
             short_output=args.short_output,
         )
-        print(sorted_issues)
+        if args.json_output:
+            print(sorted_issues)
+        else:
+            sorted_issues_data = json.loads(sorted_issues)
+            _log_success("Non-relevant issues:")
+            non_relevant = sorted_issues_data.get("non-relevant", [])
+            for issue in non_relevant:
+                _log_info(f"- #{issue['issue_id']}: {issue['title']} (reason: {issue['reason']})")
+
+            _log_success("\nEasy AI fix issues:")
+            easy_ai_fix = sorted_issues_data.get("easy-ai-fix", [])
+            for issue in easy_ai_fix:
+                _log_info(f"- #{issue['issue_id']}: {issue['title']} (reason: {issue['reason']})")
+
+    elif args.command == "fix-issue":
+        issue_id = args.issue_id
+        _log_info(f"Attempting to fix issue #{issue_id} with Codex...")
+        fix = asyncio.run(codex_fix_issue(issue_id))
+        print(json.dumps(fix, ensure_ascii=True, indent=2))
 
 if __name__ == "__main__":
     main()
