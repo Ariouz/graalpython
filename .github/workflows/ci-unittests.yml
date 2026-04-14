@@ -16,12 +16,30 @@ jobs:
       - name: Check file changes
         id: changes
         if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
+        uses: actions/github-script@v8
         with:
-          filters: |
-            workflow_or_suite:
-              - '.github/**'
-              - 'mx.graalpython/suite.py'
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setOutput('workflow_or_suite', 'false');
+              return;
+            }
+
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const hasWorkflowOrSuiteChanges = changedFiles.some(file =>
+              file.filename.startsWith('.github/') || file.filename === 'mx.graalpython/suite.py'
+            );
+
+            core.setOutput('workflow_or_suite', hasWorkflowOrSuiteChanges ? 'true' : 'false');
 
       - name: Check if workflow should run
         id: decision
