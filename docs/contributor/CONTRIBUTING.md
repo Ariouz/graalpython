@@ -1,6 +1,6 @@
 # Contributing to GraalPy
 
-Thanks for considering to contribute!
+Thanks for considering to connnnntribute!
 To get you started, read about the structure of this implementation.
 
 You will need to sign the [Oracle Contributor Agreement](http://www.graalvm.org/community/contributors/) for us to be able to merge your work.
