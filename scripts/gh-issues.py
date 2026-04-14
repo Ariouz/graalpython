@@ -9,10 +9,13 @@ import urllib.request
 
 from openai_codex_sdk import Codex, Thread
 from openai_codex_sdk.errors import ThreadRunError
+from openai_codex_sdk import parsing as codex_parsing
+from openai_codex_sdk.types import UnknownThreadItem
 from termcolor import cprint
 
 REPO = "oracle/graalpython"
-WORKING_DIRECTORY = "/home/vcalvez/graalpython"
+PROJECT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GHAPI = "https://api.github.com"
 CODEX = Codex()
 MAX_ISSUE_TEXT_CHARS = 700
 CODEX_BATCH_SIZE = 1
@@ -26,7 +29,7 @@ def _log_info(message: str) -> None:
 def _log_success(message: str) -> None:
     cprint(message, "green")
 
-
+### Ayncio subprocess limit patching and codex issue preparation
 def _patch_codex_stdio_limit(limit: int = CODEX_STDIO_READ_LIMIT) -> None:
     """Raise asyncio subprocess stream limit used by openai_codex_sdk.
 
@@ -46,6 +49,32 @@ def _patch_codex_stdio_limit(limit: int = CODEX_STDIO_READ_LIMIT) -> None:
 
 
 _patch_codex_stdio_limit()
+
+
+def _patch_codex_parse_file_change_in_progress() -> None:
+    """Work around SDK validation strictness for in-progress file_change events.
+
+    Some SDK versions model file_change status as completed|failed, while streamed
+    events may emit in_progress. When that happens, parsing crashes the whole run.
+    We fall back to UnknownThreadItem for any item payload that fails strict parsing.
+    """
+    original_parse_thread_item = codex_parsing.parse_thread_item
+    if getattr(original_parse_thread_item, "_gh_issues_file_change_patch", False):
+        return
+
+    def _safe_parse_thread_item(data):
+        try:
+            return original_parse_thread_item(data)
+        except Exception:
+            if isinstance(data, dict) and isinstance(data.get("type"), str):
+                return UnknownThreadItem.model_validate(data)
+            raise
+
+    setattr(_safe_parse_thread_item, "_gh_issues_file_change_patch", True)
+    codex_parsing.parse_thread_item = _safe_parse_thread_item
+
+
+_patch_codex_parse_file_change_in_progress()
 
 
 def _trim_text(value: str, max_chars: int = MAX_ISSUE_TEXT_CHARS) -> str:
@@ -68,7 +97,7 @@ def _prepare_issues_for_codex(issues: list[dict]) -> list[dict]:
         )
     return prepared
 
-
+### Batching
 def _chunks(items: list[dict], size: int) -> list[list[dict]]:
     return [items[i:i + size] for i in range(0, len(items), size)]
 
@@ -101,7 +130,7 @@ def _candidate_files_for_issue(issue: dict, max_files: int = 5) -> list[str]:
         "--exclude-dir=__pycache__",
         "--binary-files=without-match",
         pattern,
-        WORKING_DIRECTORY,
+        PROJECT_DIRECTORY,
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=2, check=False)
@@ -110,7 +139,7 @@ def _candidate_files_for_issue(issue: dict, max_files: int = 5) -> list[str]:
 
     files = []
     for line in result.stdout.splitlines():
-        rel = line.replace(f"{WORKING_DIRECTORY}/", "")
+        rel = line.replace(f"{PROJECT_DIRECTORY}/", "")
         files.append(rel)
         if len(files) >= max_files:
             break
@@ -159,7 +188,7 @@ def codex_sort_issues(
                 "sandboxMode": "read-only",
                 "webSearchEnabled": False,
                 "networkAccessEnabled": False,
-                "workingDirectory": WORKING_DIRECTORY,
+                "workingDirectory": PROJECT_DIRECTORY,
             }
             thread = CODEX.start_thread(thread_options)
 
@@ -167,7 +196,7 @@ def codex_sort_issues(
                 "Read only the local files needed for this issue. "
                 f"Read at most {max_files_to_read} files, and skim only minimal relevant sections."
             )
-            candidate_files = _candidate_files_for_issue(batch[0], max_files=5)
+            candidate_files = _candidate_files_for_issue(batch[0], max_files=max_files_to_read)
             
             prompt = (
                 "Classify each issue into one of: easy-ai-fix, non-relevant, ignore. "
@@ -182,8 +211,6 @@ def codex_sort_issues(
             )
             response, usage = await _codex_prompt_async(prompt, thread)
             _log_success(f"Processed batch {index}/{total}")
-            _log_info(f"Batch {index} response: {response.strip()[:200]}{'...' if len(response.strip()) > 200 else ''}")
-            _log_info(f"Batch {index} token usage: input={usage['input_tokens']}, cached_input={usage['cached_input_tokens']}, output={usage['output_tokens']}")
             return json.loads(_extract_json_payload(response)), usage
 
     async def _run_all() -> list[tuple[list[dict], dict[str, int]]]:
@@ -247,18 +274,92 @@ def codex_sort_issues(
     )
 
 
-async def codex_fix_issue(issue_id: int) -> str:
-    thread = CODEX.start_thread({"workingDirectory": WORKING_DIRECTORY})
+async def codex_fix_issue(issue_id: int, max_rounds: int = 8) -> str:
+    thread = CODEX.start_thread(
+        {
+            "approvalPolicy": "never",
+            "sandboxMode": "workspace-write",
+            "webSearchEnabled": False,
+            "networkAccessEnabled": False,
+            "workingDirectory": PROJECT_DIRECTORY,
+        }
+    )
     prompt = (
-        f"Attempt to fix the issue #{issue_id} in the codebase. "
-        "Read only the local files needed for this issue. "
+        f"Attempt to fix github {REPO} issue #{issue_id} in the local codebase. "
+        "Read only the local files needed. "
         "Skim only minimal relevant sections. "
-        "Make relevant tests and iterate fix."
+        "Make changes and run relevant tests. "
+        "At the end of your response, return ONLY JSON with this schema: "
+        "{\"fixed\": boolean, \"summary\": string}."
     )
 
-    response, _ = await _codex_prompt_async(prompt, thread)
-    return response
+    last_response = ""
+    rounds = max(1, max_rounds)
+    for round_idx in range(1, rounds + 1):
+        _log_info(f"Codex fix round {round_idx}/{rounds}...")
+        response, _ = await _codex_prompt_async(prompt, thread)
+        last_response = response
+        _log_info(f"Codex response (round {round_idx}):")
+        print(response)
 
+        fixed = False
+        try:
+            payload = json.loads(_extract_json_payload(response))
+            fixed = bool(payload.get("fixed", False))
+        except (json.JSONDecodeError, TypeError):
+            fixed = False
+
+        if fixed:
+            _log_success(f"Codex marked issue #{issue_id} as fixed in round {round_idx}.")
+            return response
+
+        prompt = (
+            f"Issue #{issue_id} is not fixed yet. Continue iterating: "
+            "inspect remaining failures, adjust code, and rerun relevant tests. "
+            "When done, return ONLY JSON with this schema: "
+            "{\"fixed\": boolean, \"summary\": string}."
+        )
+
+    _log_info(f"Reached max rounds ({rounds}) for issue #{issue_id} without confirmed fix.")
+    return last_response
+
+### Issue categorizing
+
+def sort_issues(args: argparse.Namespace):
+    def print_issue_result(category: str, issues: dict):
+        iss = issues.get(category, [])
+        _log_success(f"{category.capitalize()} issues:")
+        for issue in iss:
+            issue_id = issue.get("issue_id", "?")
+            title = issue.get("title")
+            reason = issue.get("reason")
+            if title is None and reason is None:
+                _log_info(f"- #{issue_id}")
+            elif reason is None:
+                _log_info(f"- #{issue_id}: {title}")
+            elif title is None:
+                _log_info(f"- #{issue_id} (reason: {reason})")
+            else:
+                _log_info(f"- #{issue_id}: {title} (reason: {reason})")
+    
+    issues = get_issues(limit=args.limit, label=args.label)
+    _log_info(f"Fetched {len(json.loads(issues))} issues. Now sorting with Codex...")
+    sorted_issues = codex_sort_issues(
+        json.loads(issues),
+        workers=args.codex_workers,
+        print_token_usage=args.print_token_usage,
+        max_files_to_read=max(0, args.codex_max_files),
+        short_output=args.short_output,
+    )
+    
+    if args.json_output:
+        print(sorted_issues)
+    else:
+        sorted_issues_data = json.loads(sorted_issues)
+        print_issue_result("non-relevant", sorted_issues_data)
+        print_issue_result("easy-ai-fix", sorted_issues_data)
+
+### GitHub API interaction
 
 def build_github_request(url: str, query_params: dict[str, str], token: str | None = None) -> urllib.request.Request:
     headers = {
@@ -283,7 +384,7 @@ def get_issues(limit: int = 30, label: str | None = None) -> str:
         }
         if label:
             query_params["labels"] = label
-        url = f"https://api.github.com/repos/{REPO}/issues"
+        url = f"{GHAPI}/repos/{REPO}/issues"
         req = build_github_request(url, query_params, token=os.getenv("GITHUB_TOKEN"))
         with urllib.request.urlopen(req) as resp:
             raw_issues = json.loads(resp.read())
@@ -326,38 +427,22 @@ def main() -> None:
 
     fix_parser = subparsers.add_parser("fix-issue", help="Attempt to fix an issue with Codex")
     fix_parser.add_argument("--issue-id", type=int, required=True, help="ID of the issue to fix")
+    fix_parser.add_argument("--max-rounds", type=int, default=8, help="Maximum iterative Codex fix rounds")
 
     args = parser.parse_args()
 
     if args.command == "get-issues":
-        issues = get_issues(limit=args.limit, label=args.label)
-        _log_info(f"Fetched {len(json.loads(issues))} issues. Now sorting with Codex...")
-        sorted_issues = codex_sort_issues(
-            json.loads(issues),
-            workers=args.codex_workers,
-            print_token_usage=args.print_token_usage,
-            max_files_to_read=max(0, args.codex_max_files),
-            short_output=args.short_output,
-        )
-        if args.json_output:
-            print(sorted_issues)
-        else:
-            sorted_issues_data = json.loads(sorted_issues)
-            _log_success("Non-relevant issues:")
-            non_relevant = sorted_issues_data.get("non-relevant", [])
-            for issue in non_relevant:
-                _log_info(f"- #{issue['issue_id']}: {issue['title']} (reason: {issue['reason']})")
-
-            _log_success("\nEasy AI fix issues:")
-            easy_ai_fix = sorted_issues_data.get("easy-ai-fix", [])
-            for issue in easy_ai_fix:
-                _log_info(f"- #{issue['issue_id']}: {issue['title']} (reason: {issue['reason']})")
+        sort_issues(args)
 
     elif args.command == "fix-issue":
         issue_id = args.issue_id
         _log_info(f"Attempting to fix issue #{issue_id} with Codex...")
-        fix = asyncio.run(codex_fix_issue(issue_id))
-        print(json.dumps(fix, ensure_ascii=True, indent=2))
+        fix = asyncio.run(codex_fix_issue(issue_id, max_rounds=max(1, args.max_rounds)))
+        try:
+            payload = json.loads(_extract_json_payload(fix))
+            print(json.dumps(payload, ensure_ascii=True, indent=2))
+        except (json.JSONDecodeError, TypeError):
+            print(fix)
 
 if __name__ == "__main__":
     main()
