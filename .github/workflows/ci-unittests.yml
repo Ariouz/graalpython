@@ -22,6 +22,7 @@ jobs:
             const pr = context.payload.pull_request;
             if (!pr) {
               core.setOutput('workflow_or_suite', 'false');
+              core.setOutput('docs_only', 'false');
               return;
             }
 
@@ -38,18 +39,22 @@ jobs:
             const hasWorkflowOrSuiteChanges = changedFiles.some(file =>
               file.filename.startsWith('.github/') || file.filename === 'mx.graalpython/suite.py'
             );
+            const hasOnlyDocsChanges = changedFiles.length > 0 && changedFiles.every(file => file.filename.startsWith('docs/'));
 
             core.setOutput('workflow_or_suite', hasWorkflowOrSuiteChanges ? 'true' : 'false');
+            core.setOutput('docs_only', hasOnlyDocsChanges ? 'true' : 'false');
 
       - name: Check if workflow should run
         id: decision
         uses: actions/github-script@v8
         env:
           HAS_WORKFLOW_OR_SUITE_CHANGES: ${{ steps.changes.outputs.workflow_or_suite || 'false' }}
+          HAS_ONLY_DOCS_CHANGES: ${{ steps.changes.outputs.docs_only || 'false' }}
         with:
           script: |
             const eventName = context.eventName;
             const hasWorkflowOrSuiteChanges = process.env.HAS_WORKFLOW_OR_SUITE_CHANGES === 'true';
+            const hasOnlyDocsChanges = process.env.HAS_ONLY_DOCS_CHANGES === 'true';
 
             if (eventName === 'workflow_dispatch') {
               core.setOutput('run_ci', 'true');
@@ -71,17 +76,6 @@ jobs:
               return;
             }
 
-            const changedFiles = await github.paginate(
-              github.rest.pulls.listFiles,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                per_page: 100,
-              }
-            );
-
-            const hasOnlyDocsChanges = changedFiles.length > 0 && changedFiles.every(file => file.filename.startsWith('docs/'));
             if (hasOnlyDocsChanges) {
               core.setOutput('run_ci', 'false');
               core.setOutput('reason', 'docs-only changes');
