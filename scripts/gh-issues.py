@@ -211,6 +211,7 @@ def codex_sort_issues(
             )
             response, usage = await _codex_prompt_async(prompt, thread)
             _log_success(f"Processed batch {index}/{total}")
+            _log_info(f"Codex response for batch {index}:\n{response}")
             return json.loads(_extract_json_payload(response)), usage
 
     async def _run_all() -> list[tuple[list[dict], dict[str, int]]]:
