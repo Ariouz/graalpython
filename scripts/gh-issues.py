@@ -109,7 +109,7 @@ def _patch_codex_stdio_limit(limit: int = CODEX_STDIO_READ_LIMIT) -> None:
     """Raise asyncio subprocess stream limit used by openai_codex_sdk.
 
     This avoids ValueError("Separator is found, but chunk is longer than limit")
-    when Codex emits a very large JSON line in experimental-json mode.
+    when Codex emits a very large JSON.
     """
     create_subprocess_exec = asyncio.create_subprocess_exec
     if getattr(create_subprocess_exec, "_gh_issues_limit_patched", False):
@@ -127,11 +127,8 @@ _patch_codex_stdio_limit()
 
 
 def _patch_codex_parse_file_change_in_progress() -> None:
-    """Work around SDK validation strictness for in-progress file_change events.
-
-    Some SDK versions model file_change status as completed|failed, while streamed
+    """Some model file_change status as completed|failed, while streamed
     events may emit in_progress. When that happens, parsing crashes the whole run.
-    We fall back to UnknownThreadItem for any item payload that fails strict parsing.
     """
     original_parse_thread_item = codex_parsing.parse_thread_item
     if getattr(original_parse_thread_item, "_gh_issues_file_change_patch", False):
