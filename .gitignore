@@ -100,3 +100,6 @@ pom-mx.xml
 compile_commands.json
 /.jdtls*
 /.agent-shell*
+.codex
+opencode.json
+pyrightconfig.json

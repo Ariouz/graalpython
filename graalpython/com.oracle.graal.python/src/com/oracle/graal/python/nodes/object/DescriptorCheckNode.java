@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,21 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ssl;
+package com.oracle.graal.python.nodes.object;
 
-import java.security.Provider;
-import java.security.Security;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
-public final class LazyBouncyCastleProvider {
-    private static Provider securityProvider;
+@GenerateInline
+@GenerateCached(false)
+@GenerateUncached
+public abstract class DescriptorCheckNode extends Node {
+    public abstract void execute(Node inliningTarget, Object descrType, Object nameObj, Object obj);
 
-    public static synchronized Provider initProvider() {
-        if (securityProvider == null) {
-            securityProvider = new BouncyCastleProvider();
-            Security.addProvider(securityProvider);
+    // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
+    @Specialization
+    static void check(Node inliningTarget, Object descrType, Object name, Object obj,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(inline = false) IsSubtypeNode isSubtypeNode,
+                    @Cached PRaiseNode raiseNode) {
+        Object type = getClassNode.execute(inliningTarget, obj);
+        if (!isSubtypeNode.execute(type, descrType)) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESC_S_FOR_N_DOESNT_APPLY_TO_N, name, descrType, type);
         }
-        return securityProvider;
     }
 }

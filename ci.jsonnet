@@ -17,7 +17,7 @@
         RUBYGEMS_MIRROR: "",
         JEKYLL_THEME_GIT: "",
         WEBSITE_GIT: "",
-        STAGING_DEPLOY_CMD: [],
+        STAGING_DEPLOY_CMD: [["echo", "1"]],
         GRAAL_ENTERPRISE_GIT: "",
         CI_OVERLAYS_GIT: "",
         BENCHMARK_CONFIG_GIT: "",
@@ -120,7 +120,7 @@
         "python-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
-            "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
+            "darwin:aarch64:jdk21"       : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
             "windows:amd64:jdk21"        : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
@@ -334,6 +334,7 @@
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ce_default_interpreter"                    : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
+            "vm_name:graalvm_ee_default_interpreter_uncached"           : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
             "vm_name:graalpython_core_interpreter"                      : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalpython_core_native_interpreter"               : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},

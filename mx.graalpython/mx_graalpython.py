@@ -129,6 +129,7 @@ GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
+GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", True)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -158,6 +159,20 @@ if wants_debug_build():
     setattr(mx_native.DefaultNativeProject, "cflags", property(
         lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
     ))
+
+
+def _is_graalos_build():
+    return "musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")
+
+
+def _with_bouncycastle():
+    return GRAALPY_WITH_BOUNCYCASTLE and not _is_graalos_build()
+
+
+def bcflags():
+    if _with_bouncycastle():
+        return '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util'
+    return ''
 
 
 if WIN32:
@@ -246,6 +261,14 @@ def get_jdk():
 def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
+    if _with_bouncycastle():
+        mx.log("Including bouncycastle with GraalPy standalone")
+        deps += [
+            "graalpython:GRAALPYTHON_BOUNCYCASTLE",
+            "graalpython:BOUNCYCASTLE-PROVIDER",
+            "graalpython:BOUNCYCASTLE-PKIX",
+            "graalpython:BOUNCYCASTLE-UTIL",
+        ]
     return deps
 
 
@@ -286,27 +309,26 @@ def github_ci_build_args():
 
 def libpythonvm_build_args():
     build_args = bytecode_dsl_build_args()
-
-    if limit := os.environ.get('GRAALPY_UncachedInterpreterLimit'):
-        mx.log(f"Uncached interpreter limit explicitly set to {limit}")
-        build_args += [f'-Dpython.UncachedInterpreterLimit={limit}']
-
     if os.environ.get("GITHUB_CI"):
         build_args += github_ci_build_args()
 
-    if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
+    if graalos := _is_graalos_build():
         build_args += ['-H:+GraalOS']
     else:
-        build_args += ["-Dpolyglot.image-build-time.PreinitializeContexts=python"]
+        build_args += [
+            "-Dpolyglot.image-build-time.PreinitializeContexts=python",
+            "-H:+UnlockExperimentalVMOptions",
+            '-H:+RelativeCodePointers',
+            "-H:-UnlockExperimentalVMOptions",
+        ]
 
     if (
-            mx.is_linux()
-            and not graalos
+            not graalos
             and mx_sdk_vm_ng.is_nativeimage_ee()
             and not os.environ.get('NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE')
             and not _is_overridden_native_image_arg("--gc")
     ):
-        build_args += ['--gc=G1', '-H:-ProtectionKeys']
+        build_args += ['-H:-ProtectionKeys']
 
     profile = None
     if (
@@ -497,8 +519,7 @@ def full_python(args, env=None):
     graalpy_path = os.path.join(standalone_home, 'bin', _graalpy_launcher())
     if not os.path.exists(graalpy_path):
         mx.abort("GraalPy standalone doesn't seem to be built.\n" +
-                 "To build it: mx python-jvm\n" +
-                 "Alternatively use: mx python --hosted")
+                 "To build it: mx python-jvm")
 
     run([graalpy_path] + args, env=env)
 
@@ -1212,12 +1233,7 @@ def graalpytest(args):
     cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
     delete_bad_env_keys(env)
     if python_binary:
-        try:
-            result = run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
-            print(f"back from mx.run, returning {result}")
-            return result
-        except BaseException as e:
-            print(f"Exception raised: {e}")
+        return run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
     else:
         return full_python(cmd_args, env=env)
 
@@ -1948,7 +1964,7 @@ def graalpy_ext(*_):
 
 
 def dev_tag(_=None):
-    if not get_boolean_env('GRAALPYTHONDEVMODE', True) or 'dev' not in SUITE.release_version():
+    if not get_boolean_env('GRAALPYTHONDEVMODE', False) or 'dev' not in SUITE.release_version():
         mx.logv("GraalPy dev_tag: <0 because not in dev mode>")
         return ''
 
@@ -1988,6 +2004,7 @@ mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 
 mx_subst.results_substitutions.register_no_arg('graalpy_cmake_build_type', graalpy_cmake_build_type)
+mx_subst.string_substitutions.register_no_arg('bcflags', bcflags)
 
 
 def update_import(name, suite_py: Path, args):
@@ -2027,25 +2044,119 @@ def update_import(name, suite_py: Path, args):
     return tip
 
 
+def _import_update_branch_name():
+    return f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"
+
+
+def _rota_import_update_pr_metadata(branch):
+    return {
+        "project": "G",
+        "repo": "graalpython",
+        "from_branch": branch,
+        "to_branch": "master",
+        "title": "[GR-21590] Import update",
+        "description": "Automated import update generated by mx python-update-import --rota.",
+        "reviewers": [
+            "tim.felgentreff@oracle.com",
+            "michael.simacek@oracle.com",
+            "florian.angerer@oracle.com",
+            "stepan.sindelar@oracle.com",
+        ],
+    }
+
+
+def _prepare_update_import_branch(vc, args):
+    current_branch = vc.active_branch(SUITE.dir, abortOnError=not args.no_master_check and not args.rota)
+    if vc.isDirty(SUITE.dir) and not args.allow_dirty:
+        mx.abort(f"updating imports should be done on a clean branch, not clean: {SUITE.dir}")
+
+    if args.rota:
+        vc.git_command(SUITE.dir, ["checkout", "master"], abortOnError=True)
+        if not args.no_pull:
+            vc.git_command(SUITE.dir, ["pull", "--ff-only"], abortOnError=True)
+        current_branch = _import_update_branch_name()
+        vc.git_command(SUITE.dir, ["checkout", "-b", current_branch], abortOnError=True)
+        return current_branch
+
+    if current_branch == "master" or args.no_master_check:
+        vc.git_command(SUITE.dir, ["checkout", "-b", _import_update_branch_name()], abortOnError=True)
+        current_branch = vc.active_branch(SUITE.dir)
+
+    return current_branch
+
+
+def _run_rota_unittest_tag_update(repo: Path):
+    enterprise_dir = repo.parent / "graal-enterprise"
+    enterprise_suite_dir = enterprise_dir / "graalpython-enterprise"
+    if not enterprise_suite_dir.is_dir():
+        mx.abort(
+            "--rota requires a sibling graal-enterprise checkout with "
+            f"graalpython-enterprise at {enterprise_suite_dir}"
+        )
+
+    run_mx(["--dy", "/graalpython-enterprise", "python-update-unittest-tags"])
+
+
+def _stage_rota_generated_files(vc, repo: Path):
+    vc.git_command(
+        repo,
+        ["add", "graalpython/com.oracle.graal.python.test/src/tests/unittest_tags"],
+        abortOnError=True,
+    )
+
+
+def _commit_if_dirty(vc, repo: Path, message):
+    if not vc.isDirty(repo):
+        return False
+
+    prev_verbosity = mx.get_opts().very_verbose
+    mx.get_opts().very_verbose = True
+    try:
+        vc.commit(repo, message)
+    finally:
+        mx.get_opts().very_verbose = prev_verbosity
+    return True
+
+
+def _push_import_update_branch(vc, repo: Path, current_branch, args):
+    if not args.no_push:
+        vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+        mx.log("Import update was pushed")
+    else:
+        mx.log("Import update was committed")
+
+
+def _create_rota_import_update_pr(repo: Path, current_branch):
+    pr = _rota_import_update_pr_metadata(current_branch)
+    run([
+        "gdev-cli", "bitbucket", "create-pr",
+        "--project", pr["project"],
+        "--repo", pr["repo"],
+        "--from-branch", pr["from_branch"],
+        "--to-branch", pr["to_branch"],
+        "--title", pr["title"],
+        "--description", pr["description"],
+        "--reviewers", ",".join(pr["reviewers"]),
+    ], cwd=repo)
+
+
 def update_import_cmd(args):
     """Update our imports"""
 
     parser = ArgumentParser()
     parser.add_argument('--graal-rev', default='')
+    parser.add_argument('--rota', action='store_true', help="Run the automated GraalPy ROTA import-update and PR-creation steps")
     parser.add_argument('--no-pull', action='store_true')
     parser.add_argument('--no-push', action='store_true')
     parser.add_argument('--allow-dirty', action='store_true')
     parser.add_argument('--no-master-check', action='store_true', help="do not check if repos are on master branch (e.g., when detached)")
     args = parser.parse_args(args)
 
-    vc = SUITE.vc
+    if args.rota and args.no_push:
+        mx.abort("--rota creates a PR, so it cannot be used together with --no-push")
 
-    current_branch = vc.active_branch(SUITE.dir, abortOnError=not args.no_master_check)
-    if vc.isDirty(SUITE.dir) and not args.allow_dirty:
-        mx.abort(f"updating imports should be done on a clean branch, not clean: {SUITE.dir}")
-    if current_branch == "master" or args.no_master_check:
-        vc.git_command(SUITE.dir, ["checkout", "-b", f"update/GR-21590/{datetime.datetime.now().strftime('%d%m%y')}"])
-        current_branch = vc.active_branch(SUITE.dir)
+    vc = SUITE.vc
+    current_branch = _prepare_update_import_branch(vc, args)
 
     repo = Path(SUITE.dir)
     truffle_repo = Path(cast(mx.SourceSuite, mx.suite("truffle")).dir).parent
@@ -2067,18 +2178,23 @@ def update_import_cmd(args):
     shutil.copy(truffle_repo / "common.json", repo / "ci" / "graal" / "common.json")
     shutil.copytree(truffle_repo / "ci", repo / "ci" / "graal" / "ci", dirs_exist_ok=True)
 
-    if vc.isDirty(repo):
-        prev_verbosity = mx.get_opts().very_verbose
-        mx.get_opts().very_verbose = True
-        try:
-            vc.commit(repo, "Update imports")
-            if not args.no_push:
-                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
-                mx.log("Import update was pushed")
-            else:
-                mx.log("Import update was committed")
-        finally:
-            mx.get_opts().very_verbose = prev_verbosity
+    if args.rota:
+        import_updated = _commit_if_dirty(vc, repo, "Update imports")
+        _apply_github_unittest_tags(no_commit=True)
+        _run_rota_unittest_tag_update(repo)
+        _stage_rota_generated_files(vc, repo)
+        tag_updated = _commit_if_dirty(vc, repo, "Update unittest tags")
+        updated = import_updated or tag_updated
+    else:
+        updated = _commit_if_dirty(vc, repo, "Update imports")
+
+    if updated:
+        _push_import_update_branch(vc, repo, current_branch, args)
+
+    if args.rota and updated:
+        _create_rota_import_update_pr(repo, current_branch)
+    elif args.rota:
+        mx.log("Import update made no changes; skipping PR creation.")
 
 
 def python_style_checks(args):
@@ -2231,6 +2347,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     ],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
+        'graalpython:GRAALPYTHON_BOUNCYCASTLE',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:BOUNCYCASTLE-UTIL',
@@ -2918,9 +3035,10 @@ def run_downstream_test(args):
     downstream_tests.run_downstream_test(graalpy, args.project)
 
 
-def update_github_unittest_tags(*args):
+def _get_github_unittest_tag_pr_commits():
     import urllib
     import json
+
     params = {
         'q': "repo:oracle/graalpython is:pr in:title Weekly Retagger: Update tags",
         'sort': 'updated',
@@ -2935,21 +3053,43 @@ def update_github_unittest_tags(*args):
     with urllib.request.urlopen(request, timeout=30) as f:
         prs = json.load(f)
 
+    if not prs['items']:
+        mx.abort("Could not find a GitHub unittest tag PR")
+
     pr_num = prs['items'][0]['number']
     request = urllib.request.Request(
         f"https://api.github.com/repos/oracle/graalpython/pulls/{pr_num}/commits",
         headers={'Content-Type': 'application/json'}
     )
 
-    mx.log("Fetching the PR")
-    mx.run(['git', 'fetch', 'https://github.com/oracle/graalpython', f'pull/{pr_num}/head:ghtags'])
-
     mx.log(f"Loading the commits of PR {pr_num} from {request.full_url}")
     with urllib.request.urlopen(request, timeout=30) as f:
         commits = json.load(f)
     shas = [c['sha'] for c in commits]
-    mx.log(f"Cherry picking {' '.join(shas)}")
-    mx.run(["git", "cherry-pick", *shas], cwd=SUITE.dir)
+    if not shas:
+        mx.abort(f"GitHub unittest tag PR {pr_num} has no commits")
+
+    return pr_num, shas
+
+
+def _apply_github_unittest_tags(no_commit=False):
+    pr_num, shas = _get_github_unittest_tag_pr_commits()
+    mx.log("Fetching the PR")
+    mx.run(['git', 'fetch', 'https://github.com/oracle/graalpython', f'+pull/{pr_num}/head:ghtags'])
+
+    cherry_pick_args = ["git", "cherry-pick"]
+    if no_commit:
+        cherry_pick_args.append("--no-commit")
+    cherry_pick_args.extend(shas)
+    mx.log(f"Cherry picking {' '.join(shas)}{' without committing' if no_commit else ''}")
+    mx.run(cherry_pick_args, cwd=SUITE.dir)
+
+
+def update_github_unittest_tags(args):
+    parser = ArgumentParser()
+    parser.add_argument('--no-commit', action='store_true', help="Apply the latest GitHub tag update without creating a commit")
+    args = parser.parse_args(args)
+    _apply_github_unittest_tags(no_commit=args.no_commit)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2957,13 +3097,13 @@ def update_github_unittest_tags(*args):
 # register the suite commands (if any)
 #
 # ----------------------------------------------------------------------------------------------------------------------
-full_python_cmd = [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM] [Python args|@VM options]']
+full_python_cmd = [full_python, '[--hosted, run on the currently executing JVM from source tree, default is to run from GraalVM. Do not use unless you specifically need to avoid the standalone] [Python args|@VM options]']
 mx.update_commands(SUITE, {
     'python': full_python_cmd,
     'python3': full_python_cmd,
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
-    'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
+    'python-update-import': [update_import_cmd, '[--rota] [--no-pull] [--no-push] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [no_return(python_svm), ''],
     'python-jvm': [no_return(python_jvm), ''],
@@ -2988,5 +3128,5 @@ mx.update_commands(SUITE, {
     'deploy-extensions-to-local-maven-repo': [deploy_graalpy_extensions_to_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
     'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
-    'python-update-github-unittest-tags': [update_github_unittest_tags, ''],
+    'python-update-github-unittest-tags': [update_github_unittest_tags, '[--no-commit]'],
 })
